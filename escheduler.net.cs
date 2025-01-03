@@ -48,6 +48,7 @@ emailBody.Append("</div>");
 
 // Add email description text
 emailBody.Append("<p style='margin: 20px;'>Hello,</p>");
+        string currentDateTime = DateTime.Now.ToString("MMM-dd-yyyy hh:mm tt");
 emailBody.Append("<p style='margin: 20px;'>Please find below the latest feeder numbers and their status:</p>");
 
 // Add table
