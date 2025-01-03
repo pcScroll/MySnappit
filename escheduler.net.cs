@@ -27,16 +27,53 @@ public class MailService
         var feederData = GetFeederDataFromDatabase();
 
         // Create the email content with the table
-        StringBuilder emailBody = new StringBuilder();
-        emailBody.Append("<html><body>");
-        emailBody.Append("<h2>Feeder Numbers and Status</h2>");
-        emailBody.Append("<table border='1' style='border-collapse: collapse; width: 50%; text-align: left;'>");
-        emailBody.Append("<thead><tr style='background-color: #4CAF50; color: white;'>");
-        emailBody.Append("<th>Location</th>");
-        emailBody.Append("<th>Feeder Numbers</th>");
-        emailBody.Append("<th>Status</th>");
-        emailBody.Append("</tr></thead>");
-        emailBody.Append("<tbody>");
+StringBuilder emailBody = new StringBuilder();
+emailBody.Append("<html>");
+emailBody.Append("<head>");
+emailBody.Append("<style>");
+emailBody.Append("body { font-family: Arial, sans-serif; margin: 0; padding: 0; border: 3px solid black; }");
+emailBody.Append(".navbar { display: flex; align-items: center; justify-content: center; background-image: url('https://via.placeholder.com/800x100'); background-size: cover; color: white; padding: 20px; }");
+emailBody.Append(".navbar h1 { margin: 0; font-size: 2em; color: white; text-align: center; }");
+emailBody.Append("table { border-collapse: collapse; width: 100%; margin: 20px 0; }");
+emailBody.Append("th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }");
+emailBody.Append("th { background-color: #f2f2f2; }");
+emailBody.Append("</style>");
+emailBody.Append("</head>");
+emailBody.Append("<body>");
+
+// Add navigation bar with an image in the background and centered title
+emailBody.Append("<div class='navbar'>");
+emailBody.Append("<h1>Feeder Status Report</h1>");
+emailBody.Append("</div>");
+
+// Add email description text
+emailBody.Append("<p style='margin: 20px;'>Hello,</p>");
+emailBody.Append("<p style='margin: 20px;'>Please find below the latest feeder numbers and their status:</p>");
+
+// Add table
+emailBody.Append("<h2 style='margin: 20px;'>Feeder Numbers and Status</h2>");
+emailBody.Append("<table>");
+emailBody.Append("<thead><tr>");
+emailBody.Append("<th>Location</th>");
+emailBody.Append("<th>Feeder Numbers</th>");
+emailBody.Append("<th>Status</th>");
+emailBody.Append("</tr></thead>");
+emailBody.Append("<tbody>");
+emailBody.Append("<tr>");
+emailBody.Append("<td>Manhattan</td>");
+emailBody.Append("<td>123, 456</td>"); // Example data
+emailBody.Append("<td>Active</td>");
+emailBody.Append("</tr>");
+emailBody.Append("<tr>");
+emailBody.Append("<td>Bronx</td>");
+emailBody.Append("<td>789, 012</td>"); // Example data
+emailBody.Append("<td>Inactive</td>");
+emailBody.Append("</tr>");
+emailBody.Append("</tbody>");
+emailBody.Append("</table>");
+
+emailBody.Append("</body>");
+emailBody.Append("</html>");
 
         // Generate table rows dynamically with styling
         bool isAlternate = false; // To alternate row colors
