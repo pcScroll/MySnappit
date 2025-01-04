@@ -41,18 +41,28 @@ emailBody.Append("</style>");
 emailBody.Append("</head>");
 emailBody.Append("<body>");
 
-emailBody.Append("<table width='100%' cellpadding='0' cellspacing='0'>");
+        ////
+
+emailBody.Append("<table width='100%' cellpadding='0' cellspacing='0' style='position: relative; height: 40px;'>");
 emailBody.Append("<tr>");
-emailBody.Append("<td align='center' style='padding: 0;'>");
+emailBody.Append("<td style='padding: 0; position: relative; text-align: center;'>");
+
+// Background image with overlayed text
+emailBody.Append("<div style='position: relative; display: inline-block;'>");
 emailBody.Append("<img src='https://via.placeholder.com/800x100' alt='Background Image' style='width: 100%; height: auto;'>");
+emailBody.Append("<h1 style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; color: white;'>Feeder Status Report</h1>");
+emailBody.Append("</div>");
 emailBody.Append("</td>");
 emailBody.Append("</tr>");
+
+// Add another image below the background image
 emailBody.Append("<tr>");
 emailBody.Append("<td align='center' style='padding: 20px;'>");
-emailBody.Append("<h1>Feeder Status Report</h1>");
+emailBody.Append("<img src='https://via.placeholder.com/400x100' alt='Additional Image' style='width: 50%; height: auto;'>");
 emailBody.Append("</td>");
 emailBody.Append("</tr>");
 emailBody.Append("</table>");
+
 
         
 
