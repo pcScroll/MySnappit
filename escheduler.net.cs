@@ -41,8 +41,12 @@ emailBody.Append("</style>");
 emailBody.Append("</head>");
 emailBody.Append("<body>");
 
-// Add navigation bar with a background image using a table
-emailBody.Append("<table width='100%' cellpadding='0' cellspacing='0' style='background-image: url(\"https://via.placeholder.com/800x100\"); background-size: cover; background-repeat: no-repeat;'>");
+emailBody.Append("<table width='100%' cellpadding='0' cellspacing='0'>");
+emailBody.Append("<tr>");
+emailBody.Append("<td align='center' style='padding: 0;'>");
+emailBody.Append("<img src='https://via.placeholder.com/800x100' alt='Background Image' style='width: 100%; height: auto;'>");
+emailBody.Append("</td>");
+emailBody.Append("</tr>");
 emailBody.Append("<tr>");
 emailBody.Append("<td align='center' style='padding: 20px;'>");
 emailBody.Append("<h1>Feeder Status Report</h1>");
