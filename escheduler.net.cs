@@ -41,10 +41,16 @@ emailBody.Append("</style>");
 emailBody.Append("</head>");
 emailBody.Append("<body>");
 
-// Add navigation bar with an image in the background and centered title
-emailBody.Append("<div class='navbar'>");
+// Add navigation bar with a background image using a table
+emailBody.Append("<table width='100%' cellpadding='0' cellspacing='0' style='background-image: url(\"https://via.placeholder.com/800x100\"); background-size: cover; background-repeat: no-repeat;'>");
+emailBody.Append("<tr>");
+emailBody.Append("<td align='center' style='padding: 20px;'>");
 emailBody.Append("<h1>Feeder Status Report</h1>");
-emailBody.Append("</div>");
+emailBody.Append("</td>");
+emailBody.Append("</tr>");
+emailBody.Append("</table>");
+
+        
 
 // Add email description text
 emailBody.Append("<p style='margin: 20px;'>Hello,</p>");
