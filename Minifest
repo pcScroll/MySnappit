@@ -1,19 +1,32 @@
 {
-  "name": "MultiSourceLinkWidget",
-  "label": "Universal Selection Link",
+  "name": "AutoEmbedWidget",
+  "label": "Dynamic Auto-Embed",
   "runtime": {
     "lib": "react",
-    "uri": "dist/widgets/MultiSourceLinkWidget.js"
+    "uri": "dist/widgets/AutoEmbedWidget.js"
   },
   "properties": {
     "urlTemplate": {
       "type": "string",
-      "default": "https://your-app.com/analysis?ids={OBJECTIDS}",
-      "description": "URL pattern with {placeholders}"
+      "default": "https://your-web-app.com?featureid={OBJECTID}&layer={LAYER_NAME}",
+      "description": "URL template with {placeholders}"
+    },
+    "allowedDomains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["your-web-app.com"],
+      "description": "Allowed domains for embedding"
+    },
+    "defaultUrl": {
+      "type": "string",
+      "default": "https://your-web-app.com/placeholder",
+      "description": "Default URL when no selection"
     }
   },
   "datasource": {
     "supportedTypes": ["FEATURE_LAYER", "TABLE"],
-    "needAddDataSource": false
+    "needAddDataSource": true
   }
 }
