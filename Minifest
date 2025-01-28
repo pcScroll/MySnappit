@@ -1,0 +1,19 @@
+{
+  "name": "MultiSourceLinkWidget",
+  "label": "Universal Selection Link",
+  "runtime": {
+    "lib": "react",
+    "uri": "dist/widgets/MultiSourceLinkWidget.js"
+  },
+  "properties": {
+    "urlTemplate": {
+      "type": "string",
+      "default": "https://your-app.com/analysis?ids={OBJECTIDS}",
+      "description": "URL pattern with {placeholders}"
+    }
+  },
+  "datasource": {
+    "supportedTypes": ["FEATURE_LAYER", "TABLE"],
+    "needAddDataSource": false
+  }
+}
