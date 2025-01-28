@@ -1,0 +1,88 @@
+import { React, DataSourceManager, DataSource, Immutable, AllWidgetProps } from 'jimu-core';
+import { Button, Loading } from 'jimu-ui';
+
+interface State {
+  url: string;
+  isLoading: boolean;
+  selectedFeatures: any[];
+}
+
+export default class MultiSourceLinkWidget extends React.Component<AllWidgetProps<unknown>, State> {
+  ds: DataSource;
+  dataSources: { [dsId: string]: DataSource } = {};
+
+  state: State = {
+    url: null,
+    isLoading: false,
+    selectedFeatures: []
+  };
+
+  componentDidMount() {
+    // Listen for all data source changes
+    DataSourceManager.getInstance().dataSourcesChangedObservable.add(this.handleDataSourceChange);
+  }
+
+  componentWillUnmount() {
+    DataSourceManager.getInstance().dataSourcesChangedObservable.remove(this.handleDataSourceChange);
+  }
+
+  handleDataSourceChange = (dataSources: { [dsId: string]: DataSource }) => {
+    this.dataSources = dataSources;
+    Object.values(this.dataSources).forEach(ds => {
+      ds.selectionChangeObservable.add(this.handleSelectionChange);
+    });
+  };
+
+  handleSelectionChange = (ds: DataSource) => {
+    this.setState({ isLoading: true }, () => {
+      const features = this.getAllSelectedFeatures();
+      const url = this.generateUrl(features);
+      this.setState({ url, isLoading: false, selectedFeatures: features });
+    });
+  };
+
+  getAllSelectedFeatures = () => {
+    return Object.values(this.dataSources)
+      .flatMap(ds => ds.getSelectedRecords())
+      .filter(f => !!f);
+  };
+
+  generateUrl = (features: any[]) => {
+    if (!features.length) return null;
+    
+    // Example: Combine features from multiple sources
+    const params = new URLSearchParams();
+    features.forEach((f, i) => {
+      const attrs = f.getData();
+      Object.entries(attrs).forEach(([key, value]) => {
+        params.append(`feature_${i}_${key}`, String(value));
+      });
+    });
+    
+    return `https://your-app.com/analysis?${params.toString()}`;
+  };
+
+  openLink = () => {
+    window.open(this.state.url, '_blank', 'noopener,noreferrer');
+  };
+
+  render() {
+    const { url, isLoading, selectedFeatures } = this.state;
+
+    return (
+      <div className="p-3">
+        {isLoading && <Loading />}
+        
+        <Button
+          disabled={!url || isLoading}
+          onClick={this.openLink}
+          title={selectedFeatures.length ? `${selectedFeatures.length} features selected` : 'No selection'}
+        >
+          {selectedFeatures.length > 1 
+            ? `Compare ${selectedFeatures.length} Items` 
+            : 'View Item Details'}
+        </Button>
+      </div>
+    );
+  }
+}
