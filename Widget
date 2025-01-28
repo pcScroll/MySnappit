@@ -1,1 +1,78 @@
 
+import { React, DataSourceComponent, DataSource, Immutable } from 'jimu-core';
+import { Loading, LoadingType } from 'jimu-ui';
+
+interface State {
+  iframeUrl: string;
+  isLoading: boolean;
+}
+
+export default class AutoEmbedWidget extends DataSourceComponent<unknown, State> {
+  state: State = {
+    iframeUrl: null,
+    isLoading: false
+  };
+
+  // Handle data source initialization
+  onDataSourceCreated = (ds: DataSource) => {
+    this.ds = ds;
+    this.ds.onSelectionChange(() => this.updateIframeUrl());
+  };
+
+  // Update URL when selections change
+  updateIframeUrl = () => {
+    this.setState({ isLoading: true }, () => {
+      const features = this.ds?.getSelectedRecords() || [];
+      const newUrl = this.generateEmbedUrl(features);
+      this.setState({ iframeUrl: newUrl, isLoading: false });
+    });
+  };
+
+  // Construct URL with feature parameters
+  generateEmbedUrl = (features: any[]): string => {
+    if (!features?.length) return this.props.config.defaultUrl || null;
+
+    const attributes = features[0].getData(); // Use first selected feature
+    const baseUrl = this.props.config.urlTemplate;
+    
+    // Replace URL placeholders with feature attributes
+    return Object.entries(attributes).reduce((url, [key, value]) => 
+      url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string)), 
+      baseUrl
+    );
+  };
+
+  // Validate URL security
+  isValidUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      return this.props.config.allowedDomains.includes(parsed.hostname);
+    } catch {
+      return false;
+    }
+  };
+
+  render() {
+    const { iframeUrl, isLoading } = this.state;
+    const validUrl = this.isValidUrl(iframeUrl);
+
+    return (
+      <div className="h-100 w-100">
+        {isLoading && <Loading type={LoadingType.Secondary} />}
+        
+        {validUrl ? (
+          <iframe 
+            src={iframeUrl}
+            className="h-100 w-100 border-0"
+            loading="lazy"
+            title="Dynamic Content"
+          />
+        ) : (
+          <div className="p-3 text-warning">
+            {iframeUrl ? "Invalid or blocked URL" : "Select a feature to load content"}
+          </div>
+        )}
+      </div>
+    );
+  }
+}
