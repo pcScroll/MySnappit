@@ -1,48 +1,58 @@
-
 import { React, DataSourceComponent, DataSource, Immutable } from 'jimu-core';
 import { Loading, LoadingType } from 'jimu-ui';
 
 interface State {
-  iframeUrl: string;
-  isLoading: boolean;
+  iframeUrl: string; // URL to load in the iframe
+  isLoading: boolean; // Loading state
+  error: string | null; // Error message
 }
 
-export default class AutoEmbedWidget extends DataSourceComponent<unknown, State> {
+interface Config {
+  urlTemplate: string; // URL template with placeholders
+  allowedDomains: string[]; // List of allowed domains for embedding
+  defaultUrl: string; // Default URL when no selection is made
+}
+
+export default class AutoEmbedWidget extends DataSourceComponent<{ config: Config }, State> {
   state: State = {
     iframeUrl: null,
-    isLoading: false
+    isLoading: false,
+    error: null,
   };
 
-  // Handle data source initialization
+  // Handle data source creation
   onDataSourceCreated = (ds: DataSource) => {
     this.ds = ds;
     this.ds.onSelectionChange(() => this.updateIframeUrl());
   };
 
-  // Update URL when selections change
+  // Update the iframe URL when selections change
   updateIframeUrl = () => {
-    this.setState({ isLoading: true }, () => {
-      const features = this.ds?.getSelectedRecords() || [];
-      const newUrl = this.generateEmbedUrl(features);
-      this.setState({ iframeUrl: newUrl, isLoading: false });
+    this.setState({ isLoading: true, error: null }, () => {
+      try {
+        const features = this.ds?.getSelectedRecords() || [];
+        const newUrl = this.generateEmbedUrl(features);
+        this.setState({ iframeUrl: newUrl, isLoading: false });
+      } catch (error) {
+        this.setState({ error: error.message, isLoading: false });
+      }
     });
   };
 
-  // Construct URL with feature parameters
+  // Generate the embed URL based on selected features
   generateEmbedUrl = (features: any[]): string => {
     if (!features?.length) return this.props.config.defaultUrl || null;
 
-    const attributes = features[0].getData(); // Use first selected feature
+    const attributes = features[0].getData(); // Use the first selected feature
     const baseUrl = this.props.config.urlTemplate;
-    
-    // Replace URL placeholders with feature attributes
-    return Object.entries(attributes).reduce((url, [key, value]) => 
-      url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string)), 
-      baseUrl
-    );
+
+    // Replace placeholders in the URL template with feature attributes
+    return Object.entries(attributes).reduce((url, [key, value]) => {
+      return url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string));
+    }, baseUrl);
   };
 
-  // Validate URL security
+  // Validate the URL for security
   isValidUrl = (url: string): boolean => {
     try {
       const parsed = new URL(url);
@@ -53,22 +63,26 @@ export default class AutoEmbedWidget extends DataSourceComponent<unknown, State>
   };
 
   render() {
-    const { iframeUrl, isLoading } = this.state;
-    const validUrl = this.isValidUrl(iframeUrl);
+    const { iframeUrl, isLoading, error } = this.state;
+    const validUrl = iframeUrl && this.isValidUrl(iframeUrl);
 
     return (
-      <div className="h-100 w-100">
+      <div className="h-100 w-100 p-2">
         {isLoading && <Loading type={LoadingType.Secondary} />}
-        
+
+        {error && (
+          <div className="text-danger mb-2">Error: {error}</div>
+        )}
+
         {validUrl ? (
-          <iframe 
+          <iframe
             src={iframeUrl}
             className="h-100 w-100 border-0"
             loading="lazy"
-            title="Dynamic Content"
+            title="Dynamic Embedded Content"
           />
         ) : (
-          <div className="p-3 text-warning">
+          <div className="text-warning">
             {iframeUrl ? "Invalid or blocked URL" : "Select a feature to load content"}
           </div>
         )}
