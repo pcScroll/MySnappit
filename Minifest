@@ -9,7 +9,7 @@
     "urlTemplate": {
       "type": "string",
       "default": "https://your-web-app.com?featureid={OBJECTID}&layer={LAYER_NAME}",
-      "description": "URL template with {placeholders}"
+      "description": "URL template with {placeholders} for feature attributes"
     },
     "allowedDomains": {
       "type": "array",
@@ -22,7 +22,7 @@
     "defaultUrl": {
       "type": "string",
       "default": "https://your-web-app.com/placeholder",
-      "description": "Default URL when no selection"
+      "description": "Default URL when no selection is made"
     }
   },
   "datasource": {
