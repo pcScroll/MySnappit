@@ -1,1 +1,101 @@
 
+import * as React from 'react';
+import { AllWidgetProps, DataSource, DataSourceManager, FeatureDataRecord, DataSourceStatus } from 'jimu-core';
+import { TextInput } from 'jimu-ui';
+
+interface State {
+  selectedFeatures: FeatureDataRecord[];
+}
+
+export default class FeatureSelectionListener extends React.PureComponent<AllWidgetProps<unknown>, State> {
+  state: State = {
+    selectedFeatures: []
+  };
+
+  private dataSources = new Set<string>();
+  private unmounted = false;
+
+  componentDidMount() {
+    this.initializeDataSources();
+    DataSourceManager.getInstance().dataSourcesChanged().subscribe(() => {
+      if (!this.unmounted) this.initializeDataSources();
+    });
+  }
+
+  componentWillUnmount() {
+    this.unmounted = true;
+    this.cleanupDataSources();
+  }
+
+  initializeDataSources = () => {
+    const dsManager = DataSourceManager.getInstance();
+    const allDataSources = dsManager.getDataSources();
+    
+    Object.keys(allDataSources).forEach(dsId => {
+      if (!this.dataSources.has(dsId)) {
+        this.setupDataSource(dsId);
+      }
+    });
+  };
+
+  setupDataSource = (dsId: string) => {
+    const ds = DataSourceManager.getInstance().getDataSource(dsId);
+    if (!ds) return;
+
+    this.dataSources.add(dsId);
+    
+    // Use supported status change listener
+    ds.listenStatusChange(this.handleStatusChange);
+    
+    // Initial check
+    this.handleStatusChange(ds, ds.getStatus());
+  };
+
+  handleStatusChange = (ds: DataSource, status: DataSourceStatus) => {
+    if (status === DataSourceStatus.Loaded) {
+      // Use supported selection watcher
+      ds.watchSelectionChange(() => {
+        const selected = ds.getSelectedRecords();
+        this.setState(prev => ({
+          selectedFeatures: [...prev.selectedFeatures, ...selected]
+        }));
+      });
+    }
+  };
+
+  cleanupDataSources = () => {
+    const dsManager = DataSourceManager.getInstance();
+    this.dataSources.forEach(dsId => {
+      const ds = dsManager.getDataSource(dsId);
+      if (ds) {
+        ds.unlistenStatusChange(this.handleStatusChange);
+      }
+    });
+    this.dataSources.clear();
+  };
+
+  render() {
+    return (
+      <div className="p-2">
+        <h4>Selected Features:</h4>
+        {this.state.selectedFeatures.map((feature, index) => (
+          <div key={index} className="mb-2 p-2 border">
+            <TextInput
+              readOnly
+              value={JSON.stringify(feature.attributes, null, 2)}
+              style={{ width: '100%', minHeight: '100px' }}
+            />
+            {feature.feature.geometry && 
+              <div className="mt-2">
+                <p>Geometry:</p>
+                <pre style={{ fontSize: '12px' }}>
+                  {JSON.stringify(feature.feature.geometry, null, 2)}
+                </pre>
+              </div>
+            }
+          </div>
+        ))}
+      </div>
+    );
+  }
+}
