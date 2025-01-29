@@ -1,1 +1,53 @@
 
+import * as React from 'react';
+import { AllWidgetProps, DataSourceManager, WidgetManager, FeatureDataRecord } from 'jimu-core';
+import { Text } from 'jimu-ui';
+
+export default class DynamicSelectionListener extends React.PureComponent<AllWidgetProps<unknown>, { objectId: number }> {
+  state = { objectId: null };
+  private dsManager = DataSourceManager.getInstance();
+  private widgetManager = WidgetManager.getInstance();
+
+  componentDidMount() {
+    // Find all map widgets in the experience
+    const mapWidgets = this.widgetManager.getWidgets().filter(w => 
+      w.uri === 'widgets/common/widget' && w.manifest.name === 'map'
+    );
+
+    // Monitor each map widget's data sources
+    mapWidgets.forEach(mapWidget => {
+      const dsIds = mapWidget.useDataSources?.map(ds => ds.dataSourceId) || [];
+      dsIds.forEach(dsId => this.monitorDataSource(dsId));
+    });
+  }
+
+  monitorDataSource = (dsId: string) => {
+    const ds = this.dsManager.getDataSource(dsId);
+    if (!ds) return;
+
+    // Check if this is a feature layer
+    if (ds.getDataSourceJson()?.type === 'FEATURE_LAYER') {
+      ds.onSelectionChange(() => {
+        const features = ds.getSelectedRecords();
+        if (features.length > 0) {
+          this.setState({ 
+            objectId: features[0].attributes.OBJECTID,
+          });
+          console.log('Feature URL:', ds.getDataSourceJson().url);
+        }
+      });
+    }
+  };
+
+  render() {
+    return (
+      <div className="p-3">
+        {this.state.objectId ? (
+          <Text>Selected Feature OBJECTID: {this.state.objectId}</Text>
+        ) : (
+          <Text>Click any feature on any map</Text>
+        )}
+      </div>
+    );
+  }
+}
