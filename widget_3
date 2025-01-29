@@ -27,3 +27,6 @@ export default class MapClickHandler extends React.PureComponent<AllWidgetProps<
     );
   }
 }
+
+
+https://gppwebadaptor.conedison.net/server/rest/services/MultiphaseMeters/AMI_Meters/MapServer
