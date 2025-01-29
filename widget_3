@@ -1,2 +1,92 @@
 
+import * as React from 'react';
+import { AllWidgetProps, DataSourceManager, FeatureDataRecord, getAppStore, IMState, WidgetMessageType } from 'jimu-core';
+import { TextInput } from 'jimu-ui';
+import { WidgetContext } from 'jimu-layouts/layout-runtime';
 
+interface State {
+  selectedFeatures: FeatureDataRecord[];
+}
+
+export default class FeatureClickListener extends React.PureComponent<AllWidgetProps<unknown>, State> {
+  static contextType = WidgetContext;
+  state: State = { selectedFeatures: [] };
+
+  private unsubscribes: (() => void)[] = [];
+  private clickHandler: (e: MouseEvent) => void;
+
+  componentDidMount() {
+    // Listen to widget messages through the official message system
+    this.unsubscribes.push(getAppStore().subscribe(this.handleAppStateChange));
+
+    // Listen to document clicks for raw click events
+    this.clickHandler = (e: MouseEvent) => this.handleDomClick(e);
+    document.addEventListener('click', this.clickHandler);
+  }
+
+  componentWillUnmount() {
+    this.unsubscribes.forEach(unsub => unsub());
+    document.removeEventListener('click', this.clickHandler);
+  }
+
+  handleAppStateChange = (state: IMState) => {
+    // Handle widget selection changes from the state
+    const selectedWidget = state.widgetsRuntimeInfo?.[this.context?.id]?.selectedWidget;
+    if (selectedWidget) {
+      this.processWidgetSelection(selectedWidget);
+    }
+  };
+
+  handleDomClick = (e: MouseEvent) => {
+    // Find the closest widget element
+    const widgetElement = (e.target as HTMLElement).closest('.widget-container');
+    if (!widgetElement) return;
+
+    const widgetId = widgetElement.getAttribute('data-widget-id');
+    if (widgetId) {
+      this.processWidgetClick(widgetId);
+    }
+  };
+
+  processWidgetClick = (widgetId: string) => {
+    const widgetInfo = this.context.widgetManager.getWidget(widgetId);
+    if (!widgetInfo) return;
+
+    // Handle map/table widget interactions
+    if (widgetInfo.uri === 'widgets/common/widget') {
+      const dsManager = DataSourceManager.getInstance();
+      const dsId = widgetInfo.useDataSources?.[0]?.dataSourceId;
+      const ds = dsId ? dsManager.getDataSource(dsId) : null;
+
+      if (ds) {
+        const selected = ds.getSelectedRecords();
+        this.setState({ selectedFeatures: selected });
+      }
+    }
+  };
+
+  render() {
+    return (
+      <div className="p-2">
+        <h4>Selected Features:</h4>
+        {this.state.selectedFeatures.map((feature, index) => (
+          <div key={index} className="mb-2 p-2 border">
+            <TextInput
+              readOnly
+              value={JSON.stringify(feature.attributes, null, 2)}
+              style={{ width: '100%', minHeight: '100px' }}
+            />
+            {feature.feature.geometry && 
+              <div className="mt-2">
+                <p>Geometry:</p>
+                <pre style={{ fontSize: '12px' }}>
+                  {JSON.stringify(feature.feature.geometry, null, 2)}
+                </pre>
+              </div>
+            }
+          </div>
+        ))}
+      </div>
+    );
+  }
+}
