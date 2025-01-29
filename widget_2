@@ -1,1 +1,110 @@
 
+import { React, DataSourceManager, DataSource, AllWidgetProps } from 'jimu-core';
+import { Loading } from 'jimu-ui';
+
+interface State {
+  iframeUrl: string;
+  isLoading: boolean;
+  selectedFeatures: any[];
+}
+
+export default class AutoEmbedWidget extends React.Component<AllWidgetProps<any>, State> {
+  state: State = {
+    iframeUrl: this.props.config?.defaultUrl || '',
+    isLoading: false,
+    selectedFeatures: [],
+  };
+
+  private ds: DataSource | null = null;
+
+  componentDidMount() {
+    this.initializeDataSource();
+  }
+
+  componentWillUnmount() {
+    this.removeSelectionListener();
+  }
+
+  // Initialize DataSource and listen for selection changes
+  initializeDataSource = () => {
+    const dsId = this.props.useDataSources?.[0]?.dataSourceId;
+    if (!dsId) {
+      console.warn("No data source configured for this widget.");
+      return;
+    }
+
+    this.ds = DataSourceManager.getInstance().getDataSource(dsId);
+    if (this.ds) {
+      this.ds.addEventListener('selection-change', this.handleSelectionChange);
+    }
+  };
+
+  // Remove selection listener when widget is removed
+  removeSelectionListener = () => {
+    if (this.ds) {
+      this.ds.removeEventListener('selection-change', this.handleSelectionChange);
+    }
+  };
+
+  // Handle selection changes
+  handleSelectionChange = async () => {
+    this.setState({ isLoading: true });
+
+    try {
+      const selectedIds = this.ds?.getSelectedRecordIds() || [];
+      if (selectedIds.length === 0) {
+        this.setState({ iframeUrl: this.props.config?.defaultUrl || '', isLoading: false });
+        return;
+      }
+
+      const features = await this.queryFeaturesByIds(selectedIds);
+      const newUrl = this.generateUrl(features);
+      this.setState({ iframeUrl: newUrl, isLoading: false, selectedFeatures: features });
+    } catch (error) {
+      console.error('Error handling selection change:', error);
+      this.setState({ isLoading: false });
+    }
+  };
+
+  // Query selected features by IDs
+  queryFeaturesByIds = async (ids: string[]) => {
+    if (!this.ds || ids.length === 0) return [];
+
+    const query = {
+      where: `${this.ds.getIdField()} IN (${ids.map(id => `'${id}'`).join(',')})`,
+      outFields: ['*'],
+      returnGeometry: false,
+    };
+
+    const result = await this.ds.query(query);
+    return result.records;
+  };
+
+  // Generate URL based on selected features
+  generateUrl = (features: any[]): string => {
+    if (!features.length) return this.props.config?.defaultUrl || '';
+
+    const attributes = features[0].getData(); // Use the first selected feature
+    const baseUrl = this.props.config.urlTemplate || this.props.config?.defaultUrl || '';
+
+    return Object.entries(attributes).reduce((url, [key, value]) => {
+      return url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string));
+    }, baseUrl);
+  };
+
+  render() {
+    const { iframeUrl, isLoading } = this.state;
+
+    return (
+      <div className="h-100 w-100 p-2">
+        {isLoading && <Loading />}
+        <iframe
+          src={iframeUrl}
+          className="h-100 w-100 border-0"
+          loading="lazy"
+          title="Embedded Website"
+        />
+      </div>
+    );
+  }
+}
