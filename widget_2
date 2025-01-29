@@ -1,1 +1,136 @@
 
+import { React, AllWidgetProps } from 'jimu-core';
+import { Loading } from 'jimu-ui';
+import DataSourceManager from 'jimu-core/lib/data-source-manager';
+import { DataSource } from 'jimu-core';
+
+interface State {
+  iframeUrl: string;
+  isLoading: boolean;
+  selectedFeatures: any[];
+}
+
+export default class AutoEmbedWidget extends React.Component<AllWidgetProps<any>, State> {
+  private dsArray: DataSource[] = [];
+
+  constructor(props: AllWidgetProps<any>) {
+    super(props);
+
+    this.state = {
+      iframeUrl: props.config?.defaultUrl || '',
+      isLoading: false,
+      selectedFeatures: [],
+    };
+  }
+
+  componentDidMount() {
+    // Initialize all data sources dynamically when the widget is mounted
+    this.initializeDataSources();
+    // Attach listeners for selection changes
+    this.attachSelectionListeners();
+  }
+
+  componentWillUnmount() {
+    // Clean up listeners when the widget is unmounted
+    this.removeSelectionListeners();
+  }
+
+  // Initialize all data sources dynamically by fetching from the DataSourceManager
+  initializeDataSources = () => {
+    const dataSources = DataSourceManager.getInstance().getDataSources();
+    if (!dataSources || dataSources.length === 0) {
+      console.warn('No data sources available for the app.');
+      return;
+    }
+
+    // Iterate over the data sources and store them
+    Object.values(dataSources).forEach(ds => {
+      this.dsArray.push(ds);
+    });
+  };
+
+  // Attach listeners for selection changes to all data sources
+  attachSelectionListeners = () => {
+    this.dsArray.forEach((ds) => {
+      ds.addEventListener('selection-change', this.handleSelectionChange);
+    });
+  };
+
+  // Remove listeners for selection changes
+  removeSelectionListeners = () => {
+    this.dsArray.forEach((ds) => {
+      ds.removeEventListener('selection-change', this.handleSelectionChange);
+    });
+  };
+
+  // Handle selection changes from data sources
+  handleSelectionChange = async () => {
+    this.setState({ isLoading: true });
+
+    try {
+      // Collect all selected feature IDs from all data sources
+      const selectedIds = this.dsArray.reduce(
+        (ids, ds) => [...ids, ...ds.getSelectedRecordIds()],
+        [] as string[]
+      );
+
+      // If no features are selected, reset the iframeUrl
+      if (selectedIds.length === 0) {
+        this.setState({ iframeUrl: this.props.config?.defaultUrl || '', isLoading: false });
+        return;
+      }
+
+      // Query features based on the selected IDs
+      const features = await this.queryFeaturesByIds(selectedIds);
+      const newUrl = this.generateUrl(features);
+      this.setState({ iframeUrl: newUrl, isLoading: false, selectedFeatures: features });
+    } catch (error) {
+      console.error('Error handling selection change:', error);
+      this.setState({ isLoading: false });
+    }
+  };
+
+  // Query features by their IDs from all data sources
+  queryFeaturesByIds = async (ids: string[]) => {
+    const allFeatures: any[] = [];
+    for (const ds of this.dsArray) {
+      const query = {
+        where: `${ds.getIdField()} IN (${ids.map(id => `'${id}'`).join(',')})`,
+        outFields: ['*'],
+        returnGeometry: false,
+      };
+
+      const result = await ds.query(query);
+      allFeatures.push(...result.records);
+    }
+    return allFeatures;
+  };
+
+  // Generate URL based on selected features
+  generateUrl = (features: any[]): string => {
+    if (!features.length) return this.props.config?.defaultUrl || '';
+
+    const attributes = features[0].getData(); // Use the first selected feature
+    const baseUrl = this.props.config.urlTemplate || this.props.config?.defaultUrl || '';
+
+    return Object.entries(attributes).reduce((url, [key, value]) => {
+      return url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string));
+    }, baseUrl);
+  };
+
+  render() {
+    const { iframeUrl, isLoading } = this.state;
+
+    return (
+      <div className="h-100 w-100 p-2">
+        {isLoading && <Loading />}
+        <iframe
+          src={iframeUrl}
+          className="h-100 w-100 border-0"
+          loading="lazy"
+          title="Embedded Website"
+        />
+      </div>
+    );
+  }
+}
