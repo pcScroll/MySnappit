@@ -1,32 +1,91 @@
-{
-  "name": "AutoEmbedWidget",
-  "label": "Dynamic Auto-Embed",
-  "runtime": {
-    "lib": "react",
-    "uri": "dist/widgets/AutoEmbedWidget.js"
-  },
-  "properties": {
-    "urlTemplate": {
-      "type": "string",
-      "default": "https://your-web-app.com?featureid={OBJECTID}&layer={LAYER_NAME}",
-      "description": "URL template with {placeholders} for feature attributes"
-    },
-    "allowedDomains": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": ["your-web-app.com"],
-      "description": "Allowed domains for embedding"
-    },
-    "defaultUrl": {
-      "type": "string",
-      "default": "https://your-web-app.com/placeholder",
-      "description": "Default URL when no selection is made"
-    }
-  },
-  "datasource": {
-    "supportedTypes": ["FEATURE_LAYER", "TABLE"],
-    "needAddDataSource": true
-  }
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { reactiveUtils, DataSource, DataSourceComponent } from "jimu-core";
+import { MapViewManager } from "jimu-arcgis";
+
+interface WidgetProps {
+  // Define any required props (if needed)
 }
+
+const Widget: React.FC<WidgetProps> = (props) => {
+  const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
+
+  // Hardcode the layer IDs and website URL
+  const layerIds = ["layer_12345", "layer_67890"]; // Replace with actual Layer IDs
+  const websiteURL = "https://your-website.com"; // Replace with your website URL
+
+  // Monitor layer selections
+  useEffect(() => {
+    const mapViewManager = MapViewManager.getInstance();
+    const mapView = mapViewManager.getActiveMapView();
+
+    if (!mapView) {
+      console.error("No active map view found!");
+      return;
+    }
+
+    // Wait for the map to load
+    reactiveUtils.when(
+      () => mapView.map, // Check if the map is available
+      () => {
+        const map = mapView.map;
+
+        // Find layers by ID
+        const layers = layerIds.map((id) => map.findLayerById(id));
+
+        // Check if layers were found
+        layers.forEach((layer, index) => {
+          if (!layer) {
+            console.error(`Layer with ID ${layerIds[index]} not found!`);
+          }
+        });
+
+        // Function to handle selection changes
+        const handleSelectionChange = () => {
+          const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
+          setSelectedFeatures(allSelectedFeatures);
+        };
+
+        // Listen for selection changes on all layers
+        const watchers = layers.map((layer) =>
+          reactiveUtils.watch(
+            () => layer.selectedFeatures,
+            () => handleSelectionChange()
+          )
+        );
+
+        // Cleanup watchers on unmount
+        return () => watchers.forEach((watcher) => watcher.remove());
+      }
+    );
+  }, []);
+
+  // Open website with selected features
+  const openWebsite = () => {
+    const featuresJSON = JSON.stringify(selectedFeatures, (key, value) => {
+      if (value && typeof value === "object" && "geometry" in value) {
+        return {
+          attributes: value.attributes,
+          geometry: value.geometry.toJSON(), // Simplify geometry
+        };
+      }
+      return value;
+    });
+
+    const encodedFeatures = encodeURIComponent(featuresJSON);
+    const urlWithFeatures = `${websiteURL}?features=${encodedFeatures}`;
+
+    // Open the website in a new tab
+    window.open(urlWithFeatures, "_blank");
+  };
+
+  return (
+    <div>
+      <button onClick={openWebsite} disabled={selectedFeatures.length === 0}>
+        Open Website with {selectedFeatures.length} Selected Features
+      </button>
+    </div>
+  );
+};
+
+export default Widget;
