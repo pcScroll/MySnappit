@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { MapViewManager, DataSourceManager } from "jimu-core";
+import { JimuMapViewComponent, JimuMapView } from "jimu-arcgis";
 
 interface WidgetProps {
   // Define any required props (if needed)
@@ -8,6 +8,7 @@ interface WidgetProps {
 
 const Widget: React.FC<WidgetProps> = (props) => {
   const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
+  const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null);
 
   // Hardcode the layer IDs and website URL
   const layerIds = ["layer_12345", "layer_67890"]; // Replace with actual Layer IDs
@@ -15,54 +16,43 @@ const Widget: React.FC<WidgetProps> = (props) => {
 
   // Monitor layer selections
   useEffect(() => {
-    const mapViewManager = MapViewManager.getInstance();
-    const mapView = mapViewManager.getActiveMapView();
-
-    if (!mapView) {
-      console.error("No active map view found!");
+    if (!jimuMapView) {
+      console.error("JimuMapView is not available!");
       return;
     }
 
-    // Wait for the map to load
-    const mapLoadHandler = mapView.watch("map", (map) => {
-      if (!map) return;
+    const map = jimuMapView.view.map;
 
-      console.log("Map loaded:", map);
+    // Find layers by ID
+    const layers = layerIds.map((id) => {
+      const layer = map.findLayerById(id);
+      if (!layer) {
+        console.error(`Layer with ID ${id} not found!`);
+        return null;
+      }
+      if (layer.type !== "feature") {
+        console.error(`Layer with ID ${id} is not a feature layer!`);
+        return null;
+      }
+      return layer;
+    }).filter(Boolean); // Remove null values
 
-      // Find layers by ID
-      const layers = layerIds.map((id) => {
-        const layer = map.findLayerById(id);
-        if (!layer) {
-          console.error(`Layer with ID ${id} not found!`);
-          return null;
-        }
-        if (layer.type !== "feature") {
-          console.error(`Layer with ID ${id} is not a feature layer!`);
-          return null;
-        }
-        return layer;
-      }).filter(Boolean); // Remove null values
+    console.log("Layers found:", layers);
 
-      console.log("Layers found:", layers);
+    // Function to handle selection changes
+    const handleSelectionChange = () => {
+      const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
+      setSelectedFeatures(allSelectedFeatures);
+    };
 
-      // Function to handle selection changes
-      const handleSelectionChange = () => {
-        const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
-        setSelectedFeatures(allSelectedFeatures);
-      };
+    // Listen for selection changes on all layers
+    const watchers = layers.map((layer) =>
+      layer.watch("selectedFeatures", () => handleSelectionChange())
+    );
 
-      // Listen for selection changes on all layers
-      const watchers = layers.map((layer) =>
-        layer.watch("selectedFeatures", () => handleSelectionChange())
-      );
-
-      // Cleanup watchers on unmount
-      return () => watchers.forEach((watcher) => watcher.remove());
-    });
-
-    // Cleanup map load handler on unmount
-    return () => mapLoadHandler.remove();
-  }, []);
+    // Cleanup watchers on unmount
+    return () => watchers.forEach((watcher) => watcher.remove());
+  }, [jimuMapView]);
 
   // Open website with selected features
   const openWebsite = () => {
@@ -85,6 +75,11 @@ const Widget: React.FC<WidgetProps> = (props) => {
 
   return (
     <div>
+      {/* Use JimuMapViewComponent to get the active map view */}
+      <JimuMapViewComponent
+        useMapWidgetId={props.useMapWidgetId} // Pass the map widget ID as a prop
+        onActiveViewChange={(view) => setJimuMapView(view)}
+      />
       <button onClick={openWebsite} disabled={selectedFeatures.length === 0}>
         Open Website with {selectedFeatures.length} Selected Features
       </button>
