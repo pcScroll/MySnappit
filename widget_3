@@ -155,3 +155,25 @@ export default Widget;
           />
         </div>
       )}
+
+
+
+    // Function to handle graphics change
+    const handleGraphicsChange = () => {
+      console.log("Graphics updated:", view.graphics.items);
+      if (view.graphics.length > 0) {
+        const feature = view.graphics.items[0]; // Get first graphic
+        const attributes = feature.attributes; // Get attributes
+        setSelectedFeature(attributes);
+      } else {
+        setSelectedFeature(null);
+      }
+    };
+
+    // Watch for changes in graphics
+    const watchGraphics = view.watch("graphics", handleGraphicsChange);
+
+    // Cleanup watcher on unmount
+    return () => {
+      watchGraphics.remove();
+    };
