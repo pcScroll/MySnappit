@@ -82,4 +82,34 @@ const Widget: React.FC<WidgetProps> = (props) => {
   );
 };
 
+
+
+
+=============================================
+
+    const view = jimuMapView.view;
+
+    // Function to handle popup changes
+    const handlePopupChange = () => {
+      const popup = view.popup;
+      if (popup.visible && popup.selectedFeature) {
+        const feature = popup.selectedFeature;
+        console.log("Selected feature from popup:", feature); // Debugging
+        setSelectedFeatures([feature]); // Update selected features
+      } else {
+        setSelectedFeatures([]); // Clear selected features if popup is closed
+      }
+    };
+
+    // Listen for popup changes
+    view.popup.watch("visible", handlePopupChange);
+    view.popup.watch("selectedFeature", handlePopupChange);
+
+    // Cleanup event listener on unmount
+    return () => {
+      view.popup.unwatch("visible", handlePopupChange);
+      view.popup.unwatch("selectedFeature", handlePopupChange);
+    };
+  }, [jimuMapView]);
+
 export default Widget;
