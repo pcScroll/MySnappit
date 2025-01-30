@@ -1,35 +1,64 @@
-
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { reactiveUtils, FeatureLayer, ArcGISJavaScriptAPI } from "jimu-core";
+import { reactiveUtils, DataSource, DataSourceComponent } from "jimu-core";
+import { MapViewManager } from "jimu-arcgis";
 
-const Widget: React.FC = () => {
-  // Hardcode the layer IDs and website URL
-  const layerIds = ["your-layer-id-1", "your-layer-id-2"]; // Replace with actual layer IDs
-  const websiteURL = "https://your-website.com"; // Replace with your website URL
+interface WidgetProps {
+  // Define any required props (if needed)
+}
 
+const Widget: React.FC<WidgetProps> = (props) => {
   const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
+
+  // Hardcode the layer IDs and website URL
+  const layerIds = ["layer_12345", "layer_67890"]; // Replace with actual Layer IDs
+  const websiteURL = "https://your-website.com"; // Replace with your website URL
 
   // Monitor layer selections
   useEffect(() => {
-    const layers = layerIds.map((id) => ArcGISJavaScriptAPI.findLayerById(id));
+    const mapViewManager = MapViewManager.getInstance();
+    const mapView = mapViewManager.getActiveMapView();
 
-    const handleSelectionChange = () => {
-      const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
-      setSelectedFeatures(allSelectedFeatures);
-    };
+    if (!mapView) {
+      console.error("No active map view found!");
+      return;
+    }
 
-    // Listen for selection changes on all layers
-    const watchers = layers.map((layer) =>
-      reactiveUtils.watch(
-        () => layer.selectedFeatures,
-        () => handleSelectionChange()
-      )
+    // Wait for the map to load
+    reactiveUtils.when(
+      () => mapView.map, // Check if the map is available
+      () => {
+        const map = mapView.map;
+
+        // Find layers by ID
+        const layers = layerIds.map((id) => map.findLayerById(id));
+
+        // Check if layers were found
+        layers.forEach((layer, index) => {
+          if (!layer) {
+            console.error(`Layer with ID ${layerIds[index]} not found!`);
+          }
+        });
+
+        // Function to handle selection changes
+        const handleSelectionChange = () => {
+          const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
+          setSelectedFeatures(allSelectedFeatures);
+        };
+
+        // Listen for selection changes on all layers
+        const watchers = layers.map((layer) =>
+          reactiveUtils.watch(
+            () => layer.selectedFeatures,
+            () => handleSelectionChange()
+          )
+        );
+
+        // Cleanup watchers on unmount
+        return () => watchers.forEach((watcher) => watcher.remove());
+      }
     );
-
-    // Cleanup watchers on unmount
-    return () => watchers.forEach((watcher) => watcher.remove());
-  }, [layerIds]);
+  }, []);
 
   // Open website with selected features
   const openWebsite = () => {
@@ -60,5 +89,3 @@ const Widget: React.FC = () => {
 };
 
 export default Widget;
-
-
