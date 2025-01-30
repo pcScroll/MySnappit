@@ -14,63 +14,36 @@ const Widget: React.FC<WidgetProps> = (props) => {
   const layerIds = ["layer_12345", "layer_67890"]; // Replace with actual Layer IDs
   const websiteURL = "https://your-website.com"; // Replace with your website URL
 
-  // Monitor layer selections
+  // Handle map click event
   useEffect(() => {
     if (!jimuMapView) {
       console.error("JimuMapView is not available!");
       return;
     }
 
-    const map = jimuMapView.view.map;
+    const view = jimuMapView.view;
 
-    // Find layers by ID
-    const layers = layerIds.map((id) => {
-      const layer = map.findLayerById(id);
-      if (!layer) {
-        console.error(`Layer with ID ${id} not found!`);
-        return null;
-      }
-      if (layer.type !== "map-image") {
-        console.error(`Layer with ID ${id} is not a map image layer!`);
-        return null;
-      }
-      console.log(`Layer found: ${layer.title} (ID: ${layer.id})`); // Debugging
-      return layer;
-    }).filter(Boolean); // Remove null values
+    // Function to handle map click
+    const handleMapClick = async (event: any) => {
+      console.log("Map click detected at:", event.mapPoint); // Debugging
 
-    console.log("Layers found:", layers);
+      // Perform a hitTest on the map view
+      const hitTestResponse = await view.hitTest(event);
+      const features = hitTestResponse.results
+        .filter((result) => layerIds.includes(result.graphic.layer.id)) // Filter by layer IDs
+        .map((result) => result.graphic); // Extract features
 
-    // Function to handle selection changes
-    const handleSelectionChange = async () => {
-      console.log("Selection change detected!"); // Debugging
-
-      // Query selected features from all layers
-      const allSelectedFeatures = await Promise.all(
-        layers.map(async (layer) => {
-          const query = layer.createQuery();
-          query.where = "1=1"; // Query all features (adjust as needed)
-          const result = await layer.queryFeatures(query);
-          console.log(`Selected features in layer ${layer.title}:`, result.features); // Debugging
-          return result.features;
-        })
-      );
-
-      // Flatten the array of selected features
-      const flattenedFeatures = allSelectedFeatures.flat();
-      setSelectedFeatures(flattenedFeatures);
+      console.log("Selected features:", features); // Debugging
+      setSelectedFeatures(features);
     };
 
-    // Listen for selection changes on all layers
-    const watchers = layers.map((layer) => {
-      console.log(`Setting up watcher for layer ${layer.title}`); // Debugging
-      return layer.watch("refresh", () => {
-        console.log(`Selection change in layer ${layer.title}`); // Debugging
-        handleSelectionChange();
-      });
-    });
+    // Listen for click events on the map view
+    view.on("click", handleMapClick);
 
-    // Cleanup watchers on unmount
-    return () => watchers.forEach((watcher) => watcher.remove());
+    // Cleanup event listener on unmount
+    return () => {
+      view.off("click", handleMapClick);
+    };
   }, [jimuMapView]);
 
   // Open website with selected features
