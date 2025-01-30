@@ -94,8 +94,9 @@ const Widget: React.FC<WidgetProps> = (props) => {
       const popup = view.popup;
       if (popup.visible && popup.selectedFeature) {
         const feature = popup.selectedFeature;
-        console.log("Selected feature from popup:", feature); // Debugging
-        setSelectedFeatures([feature]); // Update selected features
+        const attributes = feature.attributes; // Get attributes
+        console.log("Selected feature attributes:", attributes); // Debugging
+        setSelectedFeature(attributes);
       } else {
         setSelectedFeatures([]); // Clear selected features if popup is closed
       }
