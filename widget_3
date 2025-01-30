@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { JimuMapViewComponent, JimuMapView } from "jimu-arcgis";
 
 interface WidgetProps {
-  // Define any required props (if needed)
+  useMapWidgetId: string; // Pass the map widget ID as a prop
 }
 
 const Widget: React.FC<WidgetProps> = (props) => {
@@ -30,25 +30,44 @@ const Widget: React.FC<WidgetProps> = (props) => {
         console.error(`Layer with ID ${id} not found!`);
         return null;
       }
-      if (layer.type !== "feature") {
-        console.error(`Layer with ID ${id} is not a feature layer!`);
+      if (layer.type !== "map-image") {
+        console.error(`Layer with ID ${id} is not a map image layer!`);
         return null;
       }
+      console.log(`Layer found: ${layer.title} (ID: ${layer.id})`); // Debugging
       return layer;
     }).filter(Boolean); // Remove null values
 
     console.log("Layers found:", layers);
 
     // Function to handle selection changes
-    const handleSelectionChange = () => {
-      const allSelectedFeatures = layers.flatMap((layer) => layer.selectedFeatures || []);
-      setSelectedFeatures(allSelectedFeatures);
+    const handleSelectionChange = async () => {
+      console.log("Selection change detected!"); // Debugging
+
+      // Query selected features from all layers
+      const allSelectedFeatures = await Promise.all(
+        layers.map(async (layer) => {
+          const query = layer.createQuery();
+          query.where = "1=1"; // Query all features (adjust as needed)
+          const result = await layer.queryFeatures(query);
+          console.log(`Selected features in layer ${layer.title}:`, result.features); // Debugging
+          return result.features;
+        })
+      );
+
+      // Flatten the array of selected features
+      const flattenedFeatures = allSelectedFeatures.flat();
+      setSelectedFeatures(flattenedFeatures);
     };
 
     // Listen for selection changes on all layers
-    const watchers = layers.map((layer) =>
-      layer.watch("selectedFeatures", () => handleSelectionChange())
-    );
+    const watchers = layers.map((layer) => {
+      console.log(`Setting up watcher for layer ${layer.title}`); // Debugging
+      return layer.watch("refresh", () => {
+        console.log(`Selection change in layer ${layer.title}`); // Debugging
+        handleSelectionChange();
+      });
+    });
 
     // Cleanup watchers on unmount
     return () => watchers.forEach((watcher) => watcher.remove());
@@ -78,7 +97,10 @@ const Widget: React.FC<WidgetProps> = (props) => {
       {/* Use JimuMapViewComponent to get the active map view */}
       <JimuMapViewComponent
         useMapWidgetId={props.useMapWidgetId} // Pass the map widget ID as a prop
-        onActiveViewChange={(view) => setJimuMapView(view)}
+        onActiveViewChange={(view) => {
+          console.log("JimuMapView initialized:", view); // Debugging
+          setJimuMapView(view);
+        }}
       />
       <button onClick={openWebsite} disabled={selectedFeatures.length === 0}>
         Open Website with {selectedFeatures.length} Selected Features
