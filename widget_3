@@ -177,3 +177,42 @@ export default Widget;
     return () => {
       watchGraphics.remove();
     };
+
+
+import { React, useEffect } from "jimu-core";
+
+const Widget: React.FC<AllWidgetProps<any>> = (props) => {
+  useEffect(() => {
+    const iframe = document.getElementById("myIframe") as HTMLIFrameElement;
+    
+    if (iframe) {
+      iframe.addEventListener("load", () => {
+        console.log("✅ iFrame has loaded!");
+      });
+    }
+
+    return () => {
+      if (iframe) {
+        iframe.removeEventListener("load", () => {
+          console.log("✅ Cleaned up iFrame event.");
+        });
+      }
+    };
+  }, []); // Runs once when component mounts
+
+  return (
+    <div>
+      <h3>Embedded iFrame</h3>
+      <iframe
+        id="myIframe"
+        src="https://www.example.com"
+        width="600"
+        height="400"
+        style={{ border: "1px solid black" }}
+      ></iframe>
+    </div>
+  );
+};
+
+export default Widget;
+
