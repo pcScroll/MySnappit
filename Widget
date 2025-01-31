@@ -97,3 +97,11 @@ export default class AutoEmbedWidget extends DataSourceComponent<AllWidgetProps<
     );
   }
 }
+
+
+
+ const element = document.getElementById("myElementId");
+
+    if (element) {
+      element.addEventListener("click", handleElementClick);
+    }
