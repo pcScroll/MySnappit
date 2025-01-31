@@ -1,152 +1,166 @@
-
-import { React, DataSourceComponent, DataSource, AllWidgetProps } from 'jimu-core';
-import { Loading } from 'jimu-ui';
-
-interface State {
-  iframeUrl: string;
-  isLoading: boolean;
-  selectedFeatures: any[];
-}
-
-export default class AutoEmbedWidget extends DataSourceComponent<AllWidgetProps<unknown>, State> {
-  state: State = {
-    iframeUrl: null,
-    isLoading: false,
-    selectedFeatures: [],
-  };
-
-  // Handle data source creation
-  onDataSourceCreated = (ds: DataSource) => {
-    this.ds = ds;
-    this.ds.onPropertyChange('selectedIds', () => this.handleSelectionChange());
-  };
-
-  // Handle selection changes
-  handleSelectionChange = async () => {
-    this.setState({ isLoading: true });
-
-    try {
-      const selectedIds = this.ds?.selectedIds || [];
-      const features = await this.queryFeaturesByIds(selectedIds);
-      const newUrl = this.generateUrl(features);
-      this.setState({ iframeUrl: newUrl, isLoading: false, selectedFeatures: features });
-    } catch (error) {
-      console.error('Error handling selection change:', error);
-      this.setState({ isLoading: false });
-    }
-  };
-
-  // Query features by their IDs
-  queryFeaturesByIds = async (ids: string[]) => {
-    if (!ids.length) return [];
-
-    const query = {
-      where: `${this.ds.idField} IN (${ids.map(id => `'${id}'`).join(',')})`,
-      outFields: ['*'],
-      returnGeometry: false,
-    };
-
-    const result = await this.ds.query(query);
-    return result.records;
-  };
-
-  // Generate URL based on selected features
-  generateUrl = (features: any[]): string => {
-    if (!features.length) return this.props.config.defaultUrl || null;
-
-    const attributes = features[0].getData(); // Use the first selected feature
-    const baseUrl = this.props.config.urlTemplate;
-
-    // Replace placeholders in the URL template with feature attributes
-    return Object.entries(attributes).reduce((url, [key, value]) => {
-      return url.replace(new RegExp(`{${key}}`, 'g'), encodeURIComponent(value as string));
-    }, baseUrl);
-  };
-
-  // Validate URL for security
-  isValidUrl = (url: string): boolean => {
-    try {
-      const parsed = new URL(url);
-      return this.props.config.allowedDomains.includes(parsed.hostname);
-    } catch {
-      return false;
-    }
-  };
-
-  render() {
-    const { iframeUrl, isLoading, selectedFeatures } = this.state;
-    const validUrl = iframeUrl && this.isValidUrl(iframeUrl);
-
-    return (
-      <div className="h-100 w-100 p-2">
-        {isLoading && <Loading />}
-
-        {validUrl ? (
-          <iframe
-            src={iframeUrl}
-            className="h-100 w-100 border-0"
-            loading="lazy"
-            title="Dynamic Embedded Content"
-          />
-        ) : (
-          <div className="text-warning">
-            {iframeUrl ? "Invalid or blocked URL" : "Select a feature to load content"}
-          </div>
-        )}
-      </div>
-    );
-  }
-}
-
-
-
-import { React, useEffect, useRef } from "react";
-import { AllWidgetProps } from "jimu-core";
+import * as React from 'react'
+import { useState, useEffect } from 'react'
+import { JimuMapViewComponent, type JimuMapView } from 'jimu-arcgis'
+import { type AllWidgetProps } from 'jimu-core'
+import { loading } from 'jimu-ui'
 
 const Widget: React.FC<AllWidgetProps<any>> = (props) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const configData = props.manifest.config
+  const [selectedFeatures, setSelectedFeatures] = useState<any[]>([])
+  const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null)
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null)
+  const [startDate, setstartDate] = useState<string | null>(null)
+  const [endDate, setendDate] = useState<string | null>(null)
+  const useMapWidgetId = configData.widgetID
+  const websiteURL = configData.webURL
+  useEffect(() => {
+    if (!jimuMapView) {
+      console.log('MapView is not available!')
+      return
+    }
 
-  // Handle iframe load event
-  const handleIframeLoad = () => {
-    const iframe = iframeRef.current;
+    const view = jimuMapView.view
+
+    if (view.ready) {
+      console.log('view is ready')
+    } else {
+      console.log('view is stil loading')
+    }
+
+    const iframe = document.getElementById('stormPage') as HTMLIFrameElement
+
     if (iframe) {
-      const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      iframe.addEventListener('load', () => {
+        const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document
 
-      if (iframeDocument) {
-        console.log("✅ iFrame is loaded, and content is accessible.");
+        if (iframeDocument) {
+          const GetDateBtnelem = iframeDocument.getElementById('btnMeterDetails')
+          if (GetDateBtnelem) {
+            GetDateBtnelem.addEventListener('click', GetselectedDatebtnClick)
+          }
+        }
+      })
+    }
+
+    const GetselectedDatebtnClick = (event: MouseEvent) => {
+      const sdate = document.getElementById('dateStart')
+      setstartDate(startDate)
+      const edate = document.getElementById('dateEnd')
+      setendDate(endDate)
+      console.log('Selected Start date:', sdate)
+      console.log('Selected End date:', edate)
+    }
+
+    // Func to handle map click
+    //   const handleMapClick = async (event: any) => {
+    //     console.log('Map click detected at:', event.mapPoint)
+
+    //     // Perform a hitTest on the map view
+    //     const hitTestResponse = await view.hitTest(event)
+    //     const features = hitTestResponse.results
+    //       .filter((result) => layerIds.includes(result.graphic.layer.id)) // Filter by layer IDs
+    //       .map((result) => result.graphic) // Extract features
+
+    //     console.log('Selected features:', features)
+    //     setSelectedFeatures(features)
+    //   }
+
+    //   // Listen for click events on the map view
+    //   view.on('click', handleMapClick)
+
+    //   // Cleanup event listener on unmount
+    //   return () => {
+    //     view.off('click', handleMapClick)
+    //   }
+    // }, [jimuMapView])
+
+    // const handleSelectedFeatureChange = (isUpdating: any) => {
+    //   if (!isUpdating) {
+    //     view.allLayerViews.forEach((LyrView) => {
+    //       if (LyrView.layer.type === 'feature' && LyrView.selectedFeatures ) {
+    //         console.log('Selected feature attributes:', LyrView.selectedFeatures)
+    //       }
+    //     })
+    //   }
+    // }
+
+    // to handle graphics changes
+    // const handleGraphicsChange = () => {
+    //   console.log('Graphics updated:', view.graphics.items)
+    //   if (view.graphics.length > 0) {
+    //     const feature = view.graphics.items[0] // Get first graphic
+    //     const attributes = feature.attributes // Get attributes
+    //     console.log('Selected feature attributes:', attributes)
+    //     const urlWithFeatures = websiteURL + attributes.METER_NO
+    //     setIframeSrc(urlWithFeatures)
+    //     setSelectedFeatures([feature])
+    //   } else {
+    //     setSelectedFeatures([])
+    //   }
+    // }
+
+    // to handle popup changes
+    const handlePopupChange = () => {
+      const popup = view.popup
+      if (popup.visible && popup.selectedFeature) {
+        const feature = popup.selectedFeature
+        console.log('Selected feature from popup:', feature)
+        const attributes = feature.attributes
+        console.log('Selected feature attributes:', attributes)
+        const urlWithFeatures = websiteURL + attributes.METER_NO
+        setIframeSrc(urlWithFeatures)
+        setSelectedFeatures([feature])
       } else {
-        console.error("❌ Could not access iframe content.");
+        setSelectedFeatures([])
       }
     }
-  };
 
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe) {
-      iframe.addEventListener("load", handleIframeLoad);
-    }
+    //const watchVisibility = view.watch('popup.visible', handlePopupChange)
+    const watchSelectedFeature = view.watch('popup.selectedFeature', handlePopupChange)
+    // Watch for changes in graphics
+    //const watchGraphics = view.watch('graphics', handleGraphicsChange)
+
+    // Watch for changes in the view
+    //const watchview = view.watch('updating', handleSelectedFeatureChange)
 
     return () => {
       if (iframe) {
-        iframe.removeEventListener("load", handleIframeLoad);
+        const iframeDocument = iframe.contentDocument
+        if (iframeDocument) {
+          const GetDateBtnelem = iframeDocument.getElementById('btnMeterDetails')
+          if (GetDateBtnelem) {
+            GetDateBtnelem.removeEventListener('click', GetselectedDatebtnClick)
+          }
+        }
+        iframe.removeEventListener('load', () => {
+          console.log('Cleaned up iFrame event.')
+        })
       }
-    };
-  }, []);
+      //watchVisibility.remove()
+      watchSelectedFeature.remove()
+      //watchGraphics.remove()
+      //watchview.remove()
+    }
+  }, [endDate, jimuMapView, startDate, websiteURL])
 
   return (
-    <div>
-      <h3>Embedded iFrame</h3>
-      <iframe
-        ref={iframeRef}
-        src="https://www.example.com" // Replace with your iframe source
-        width="600"
-        height="400"
-        style={{ border: "1px solid black" }}
-        title="Example iframe"
-      ></iframe>
-    </div>
-  );
-};
+  <div className="h-100 w-100">
 
-export default Widget;
+    <JimuMapViewComponent
+      useMapWidgetId={useMapWidgetId}
+      onActiveViewChange={(view) => {
+        console.log('mapview initialized:', view)
+        setJimuMapView(view)
+      }}
+    />
+    {/* <button onClick={openWebsite} disabled={selectedFeatures.length === 0}>
+      Open Website with {selectedFeatures.length} Selected Features
+    </button> */}
+    <div className="h-100 w-100">
+      <iframe id="stormPage" src={iframeSrc} className="h-100 w-100 border-0" loading="lazy" style={{ border: '1px solid #ccc' }} title="Embedded Website" />
+      </div>
+  </div>
+  )
+}
 
+export default Widget
