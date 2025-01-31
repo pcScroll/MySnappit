@@ -100,21 +100,43 @@ export default class AutoEmbedWidget extends DataSourceComponent<AllWidgetProps<
 
 
 
-       const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+import { React, useEffect } from "react";
+import { AllWidgetProps } from "jimu-core";
 
-        if (iframeDocument) {
-          const elementInsideIframe = iframeDocument.getElementById("elementInIframe");
-          if (elementInsideIframe) {
-            elementInsideIframe.addEventListener("click", handleIframeElementClick);
-          }
-        }
+const Widget: React.FC<AllWidgetProps<any>> = (props) => {
+  
+  // Function to handle iframe message
+  const handleIframeMessage = (event: MessageEvent) => {
+    // Ensure the message comes from a trusted source
+    if (event.origin !== "https://www.example.com") {
+      return;
+    }
 
-if (iframe) {
-        const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDocument) {
-          const elementInsideIframe = iframeDocument.getElementById("elementInIframe");
-          if (elementInsideIframe) {
-            elementInsideIframe.removeEventListener("click", handleIframeElementClick);
-          }
-        }
-      }
+    if (event.data === "Iframe clicked") {
+      console.log("✅ The iframe was clicked!");
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("message", handleIframeMessage);
+
+    return () => {
+      window.removeEventListener("message", handleIframeMessage);
+    };
+  }, []);
+
+  return (
+    <div>
+      <h3>Embedded iFrame</h3>
+      <iframe
+        src="https://www.example.com" // Replace with your iframe source
+        width="600"
+        height="400"
+        style={{ border: "1px solid black" }}
+      ></iframe>
+    </div>
+  );
+};
+
+export default Widget;
+
