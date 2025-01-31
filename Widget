@@ -100,8 +100,21 @@ export default class AutoEmbedWidget extends DataSourceComponent<AllWidgetProps<
 
 
 
- const element = document.getElementById("myElementId");
+       const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
 
-    if (element) {
-      element.addEventListener("click", handleElementClick);
-    }
+        if (iframeDocument) {
+          const elementInsideIframe = iframeDocument.getElementById("elementInIframe");
+          if (elementInsideIframe) {
+            elementInsideIframe.addEventListener("click", handleIframeElementClick);
+          }
+        }
+
+if (iframe) {
+        const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDocument) {
+          const elementInsideIframe = iframeDocument.getElementById("elementInIframe");
+          if (elementInsideIframe) {
+            elementInsideIframe.removeEventListener("click", handleIframeElementClick);
+          }
+        }
+      }
