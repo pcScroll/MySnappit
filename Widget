@@ -164,3 +164,49 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
 }
 
 export default Widget
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import * as React from 'react';
+import { useState, useEffect } from 'react';
+import { AllWidgetProps, useDataSource, DataSource, DataSourceManager } from 'jimu-core';
+import { JimuMapViewComponent, type JimuMapView } from 'jimu-arcgis';
+
+const Widget: React.FC<AllWidgetProps<any>> = (props) => {
+  const configData = props.manifest.config;
+  const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
+  const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+
+  // Get the Table widget ID from the config or props
+  const tableWidgetId = configData.tableWidgetId; // Assuming this is passed as part of the config
+  const { dataSourceId } = props; // Data source ID for your widget
+
+  // Use the useDataSource hook to access the Table widget's data source
+  const dataSource = useDataSource(tableWidgetId);
+
+  useEffect(() => {
+    if (dataSource) {
+      // Access the data source's selection (if any)
+      const selectedRows = dataSource.getSelectedRows(); // Get selected rows from the Table widget data source
+      if (selectedRows && selectedRows.length > 0) {
+        const selectedData = selectedRows[0].data;
+        console.log('Selected data from table:', selectedData);
+        
+        // Pass selected data to iframe or use as needed
+        setIframeSrc(`https://example.com/${selectedData.id}`);
+        setSelectedFeatures([selectedData]); // Store selected data
+      }
+    }
+  }, [dataSource]);
