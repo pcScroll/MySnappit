@@ -171,24 +171,6 @@ export default Widget
 
 
 
-
-
-
-
-
-
-import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { DataSourceManager, AllWidgetProps } from 'jimu-core';
-import { JimuMapViewComponent } from 'jimu-arcgis';
-
-const Widget: React.FC<AllWidgetProps<any>> = (props) => {
-  const configData = props.manifest.config;
-  const [dataSource, setDataSource] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  const dataSourceManager = DataSourceManager.getInstance();
-
   // Fetch the data source on component mount
   useEffect(() => {
     const dataSource = dataSourceManager.getDataSource(configData.tableWidgetId);
@@ -200,28 +182,11 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
     }
   }, [configData.tableWidgetId]);
 
-  // Event handler to prevent action if the data source is still loading
-  const handleEvent = () => {
-    if (loading) {
-      console.log('Data source is still loading.');
-      return;
-    }
+  // Handle event when data source is loaded
+  useEffect(() => {
+    if (loading) return; // If still loading, do nothing
 
-    console.log('Data source is ready. Proceeding with event handling.');
-    // Place your event handling code here
-  };
-
-  return (
-    <div>
-      <JimuMapViewComponent
-        useMapWidgetId={configData.widgetID}
-        onActiveViewChange={(view) => console.log('mapview initialized:', view)}
-      />
-      <button onClick={handleEvent} disabled={loading}>
-        Handle Event
-      </button>
-    </div>
-  );
-};
-
-export default Widget;
+    // Now that the data source is loaded, perform actions
+    console.log('Data source is loaded, ready to handle events.');
+    // Place your code here to handle the event when data source is loaded
+  }, [loading]);
