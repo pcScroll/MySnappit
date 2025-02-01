@@ -167,6 +167,45 @@ export default Widget
 
 
 
+import { useEffect, useState } from 'react';
+import { jsx } from 'jimu-core';
+import { useDataSource } from 'jimu-arcgis';
+import { IMDataSourceInfo } from 'jimu-core';
+import { DataSourceTypes } from 'jimu-arcgis';
+
+// Example: Custom Widget
+export const MyCustomWidget = () => {
+  const [data, setData] = useState<any[]>([]);
+  
+  // Access external table widget's data source
+  const dataSource = useDataSource('your-external-table-datasource-id');
+
+  useEffect(() => {
+    if (dataSource) {
+      // Handle data changes from the external table
+      const fetchData = async () => {
+        try {
+          const result = await dataSource.getData();
+          setData(result);
+        } catch (error) {
+          console.error('Error fetching data from the external table:', error);
+        }
+      };
+      fetchData();
+    }
+  }, [dataSource]);
+
+  return (
+    <div>
+      <h3>Data from External Table</h3>
+      <ul>
+        {data.map((row, index) => (
+          <li key={index}>{JSON.stringify(row)}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 
 
