@@ -165,15 +165,54 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
 
 export default Widget
 
-import { DataSourceManager } from 'jimu-core';
+import { React, useState } from 'react';
+import { DataSourceComponent, DataRecord } from 'jimu-core';
 
-// Access a data source by ID
-const dataSourceManager = DataSourceManager.getInstance();
-const dataSource = dataSourceManager.getDataSource('your-data-source-id');
+const MyCustomWidget = () => {
+  const [records, setRecords] = useState<DataRecord[]>([]);
+  const [selectedRecord, setSelectedRecord] = useState<DataRecord | null>(null);
 
-    if (dataSource) {
-      // Get all records of the data source
-      dataSource.queryData().then((response) => {
-        setData(response.records);  // Assuming you want to set the records to the state
-      }).catch(error => console.error('Error fetching data:', error));
-    }
+  // Function to handle data updates
+  const handleDataChange = (records: DataRecord[]) => {
+    console.log('Records Updated:', records);
+    setRecords(records); // Store records in state
+  };
+
+  // Function to handle record click
+  const handleRecordClick = (record: DataRecord) => {
+    console.log('Clicked Record:', record.getData());
+    setSelectedRecord(record); // Store selected record
+  };
+
+  return (
+    <div>
+      <h3>Current Data from External Table Widget</h3>
+
+      {/* DataSourceComponent to listen for table widget updates */}
+      <DataSourceComponent
+        useDataSource={{ dataSourceId: 'your-data-source-id' }} // Replace with actual ID
+        widgetId="your-widget-id" // Replace with your widget's ID
+        onDataSourceUpdated={handleDataChange} // Update state when data changes
+      />
+
+      {/* Display records */}
+      <ul>
+        {records.map((record, index) => (
+          <li key={index} onClick={() => handleRecordClick(record)} style={{ cursor: 'pointer' }}>
+            {JSON.stringify(record.getData())}
+          </li>
+        ))}
+      </ul>
+
+      {/* Show selected record */}
+      {selectedRecord && (
+        <div>
+          <h4>Selected Record:</h4>
+          <pre>{JSON.stringify(selectedRecord.getData(), null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MyCustomWidget;
