@@ -177,33 +177,51 @@ export default Widget
 
 
 
-
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { AllWidgetProps, useDataSource, DataSource, DataSourceManager } from 'jimu-core';
-import { JimuMapViewComponent, type JimuMapView } from 'jimu-arcgis';
+import { DataSourceManager, AllWidgetProps } from 'jimu-core';
+import { JimuMapViewComponent } from 'jimu-arcgis';
 
 const Widget: React.FC<AllWidgetProps<any>> = (props) => {
   const configData = props.manifest.config;
-  const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
-  const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null);
-  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Access data source using DataSourceManager (alternative to useDataSource in this version)
   const dataSourceManager = DataSourceManager.getInstance();
-  const dataSource = dataSourceManager.getDataSource(configData.tableWidgetId); 
 
+  // Fetch the data source on component mount
   useEffect(() => {
+    const dataSource = dataSourceManager.getDataSource(configData.tableWidgetId);
     if (dataSource) {
-      // Access the data source's selection (if any)
-      const selectedRows = dataSource.getSelectedRows(); // Get selected rows from the Table widget data source
-      if (selectedRows && selectedRows.length > 0) {
-        const selectedData = selectedRows[0].data;
-        console.log('Selected data from table:', selectedData);
-        
-        // Pass selected data to iframe or use as needed
-        setIframeSrc(`https://example.com/${selectedData.id}`);
-        setSelectedFeatures([selectedData]); // Store selected data
-      }
+      setDataSource(dataSource);
+      setLoading(false); // Data source found, stop loading
+    } else {
+      console.error('Data source not found!');
     }
-  }, [dataSource]);
+  }, [configData.tableWidgetId]);
+
+  // Event handler to prevent action if the data source is still loading
+  const handleEvent = () => {
+    if (loading) {
+      console.log('Data source is still loading.');
+      return;
+    }
+
+    console.log('Data source is ready. Proceeding with event handling.');
+    // Place your event handling code here
+  };
+
+  return (
+    <div>
+      <JimuMapViewComponent
+        useMapWidgetId={configData.widgetID}
+        onActiveViewChange={(view) => console.log('mapview initialized:', view)}
+      />
+      <button onClick={handleEvent} disabled={loading}>
+        Handle Event
+      </button>
+    </div>
+  );
+};
+
+export default Widget;
