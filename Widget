@@ -170,23 +170,4 @@ export default Widget
 
 
 
-
-  // Fetch the data source on component mount
-  useEffect(() => {
-    const dataSource = dataSourceManager.getDataSource(configData.tableWidgetId);
-    if (dataSource) {
-      setDataSource(dataSource);
-      setLoading(false); // Data source found, stop loading
-    } else {
-      console.error('Data source not found!');
-    }
-  }, [configData.tableWidgetId]);
-
-  // Handle event when data source is loaded
-  useEffect(() => {
-    if (loading) return; // If still loading, do nothing
-
-    // Now that the data source is loaded, perform actions
-    console.log('Data source is loaded, ready to handle events.');
-    // Place your code here to handle the event when data source is loaded
-  }, [loading]);
+v
