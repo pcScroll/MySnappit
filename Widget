@@ -233,3 +233,6 @@ const MyCustomWidget = () => {
 
 export default MyCustomWidget;
 
+          const child = ds.getChildDataSources()[0]; // Get the first child data source
+          setChildDataSource(child); // Set the child data source
+
