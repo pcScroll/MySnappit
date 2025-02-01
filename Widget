@@ -189,12 +189,9 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
   const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
-  // Get the Table widget ID from the config or props
-  const tableWidgetId = configData.tableWidgetId; // Assuming this is passed as part of the config
-  const { dataSourceId } = props; // Data source ID for your widget
-
-  // Use the useDataSource hook to access the Table widget's data source
-  const dataSource = useDataSource(tableWidgetId);
+  // Access data source using DataSourceManager (alternative to useDataSource in this version)
+  const dataSourceManager = DataSourceManager.getInstance();
+  const dataSource = dataSourceManager.getDataSource(configData.tableWidgetId); 
 
   useEffect(() => {
     if (dataSource) {
