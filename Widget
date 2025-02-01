@@ -168,71 +168,20 @@ export default Widget
 
 
 
-import { React, useEffect, useState } from 'react';
-import { DataSourceComponent, DataRecord, DataSource } from 'jimu-core';
+\\\\\
 
-const MyCustomWidget = () => {
-  const [records, setRecords] = useState<DataRecord[]>([]);
-  const [selectedRecord, setSelectedRecord] = useState<DataRecord | null>(null);
-  const [dataSource, setDataSource] = useState<DataSource | null>(null);
 
-  useEffect(() => {
-    // Function to handle data updates
-    const handleDataChange = (newRecords: DataRecord[]) => {
-      console.log('Records Updated:', newRecords);
-      setRecords(newRecords); // Store records in state
-    };
 
-    // Function to handle record selection from an external event
-    const handleExternalClick = () => {
-      if (dataSource) {
-        const currentRecords = dataSource.getRecords();
-        if (currentRecords.length > 0) {
-          setSelectedRecord(currentRecords[0]); // Select first record
-          console.log('External Click Triggered:', currentRecords[0].getData());
-        }
+    const actionListener = Actions.getInstance().subscribeAction(
+      'rowSelect', // Action ID
+      (actionData) => {
+        // Update the custom widget with the selected row data
+        setSelectedRow(actionData.row);
       }
-    };
-
-    // Attach event listener for external click
-    window.addEventListener('customRecordClick', handleExternalClick);
+    );
 
     return () => {
-      window.removeEventListener('customRecordClick', handleExternalClick);
+      // Unsubscribe from the action when the widget is unmounted
+      Actions.getInstance().unsubscribeAction(actionListener);
     };
-  }, [dataSource]); // Runs whenever `dataSource` changes
-
-  return (
-    <div>
-      <h3>Current Data from External Table Widget</h3>
-
-      <DataSourceComponent
-        useDataSource={{ dataSourceId: 'your-data-source-id' }} // Replace with actual ID
-        widgetId="your-widget-id" // Replace with your widget's ID
-        onDataSourceCreated={(ds) => setDataSource(ds)} // Store data source in state
-        onDataSourceUpdated={(records) => setRecords(records)} // Update state when data changes
-      />
-
-      {/* Display records */}
-      <ul>
-        {records.map((record, index) => (
-          <li key={index}>{JSON.stringify(record.getData())}</li>
-        ))}
-      </ul>
-
-      {/* Show selected record */}
-      {selectedRecord && (
-        <div>
-          <h4>Selected Record:</h4>
-          <pre>{JSON.stringify(selectedRecord.getData(), null, 2)}</pre>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default MyCustomWidget;
-
-          const child = ds.getChildDataSources()[0]; // Get the first child data source
-          setChildDataSource(child); // Set the child data source
 
