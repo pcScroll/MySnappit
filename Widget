@@ -165,52 +165,14 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
 
 export default Widget
 
+import { DataSourceManager } from 'jimu-core';
 
-import { React, useState, useEffect } from 'react';
-import { useWidgetConfig, DataSource, IMDataSourceInfo } from 'jimu-core';
-import { DataSourceComponent } from 'jimu-ui';
+// Access a data source by ID
+const dataSourceManager = DataSourceManager.getInstance();
+const dataSource = dataSourceManager.getDataSource('your-data-source-id');
 
-export const MyCustomWidget = () => {
-  const [data, setData] = useState<any[]>([]);
-  const [dataSource, setDataSource] = useState<DataSource>(null);
-
-  // Access the data source from the external table widget (replace with actual data source ID)
-  const dataSourceId = 'your-external-table-widget-datasource-id'; // Replace with actual ID of your data source
-  const widgetConfig = useWidgetConfig();
-  
-  // Load the data source
-  useEffect(() => {
-    if (dataSourceId) {
-      DataSource.create(dataSourceId).then((source: DataSource) => {
-        setDataSource(source);
-      });
-    }
-  }, [dataSourceId]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (dataSource) {
-        try {
-          // Fetch data from the data source
-          const result = await dataSource.getData();
-          setData(result); // Update state with the data
-        } catch (error) {
-          console.error('Error fetching data from table:', error);
-        }
-      }
-    };
-
-    fetchData();
-  }, [dataSource]);
-
-  return (
-    <div>
-      <h3>Data from External Table</h3>
-      <ul>
-        {data.map((row, index) => (
-          <li key={index}>{JSON.stringify(row)}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
+if (dataSource) {
+  // Now you can interact with the data source
+  const data = await dataSource.getData();
+  console.log(data);
+}
