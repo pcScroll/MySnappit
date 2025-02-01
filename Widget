@@ -171,17 +171,32 @@ export default Widget
 \\\\\
 
 
+import { DataSourceComponent, DataSourceView, DataRecord } from 'jimu-core';
 
-    const actionListener = Actions.getInstance().subscribeAction(
-      'rowSelect', // Action ID
-      (actionData) => {
-        // Update the custom widget with the selected row data
-        setSelectedRow(actionData.row);
-      }
-    );
+const MyCustomWidget = ({ dataSourceId }: { dataSourceId: string }) => {
+  const [selectedRow, setSelectedRow] = useState<DataRecord | null>(null);
 
-    return () => {
-      // Unsubscribe from the action when the widget is unmounted
-      Actions.getInstance().unsubscribeAction(actionListener);
-    };
+  useEffect(() => {
+    const dataSource = DataSourceComponent.getInstance(dataSourceId);
+    const dataSourceView = dataSource?.view;
+
+    if (dataSourceView) {
+      // Define a function that will handle the selection change
+      const handleSelectionChange = () => {
+        const selectedRecords = dataSourceView.getSelectedRecords();
+        if (selectedRecords.length > 0) {
+          setSelectedRow(selectedRecords[0]); // Set the selected row
+        }
+      };
+
+      // Attach the selection-change listener
+      dataSourceView.addSelectionChangeListener(handleSelectionChange);
+
+      // Clean up the listener when the component unmounts
+      return () => {
+        dataSourceView.removeSelectionChangeListener(handleSelectionChange);
+      };
+    }
+  }, [dataSourceId]); // Only run this effect when dataSourceId changes
+
 
