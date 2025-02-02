@@ -204,43 +204,35 @@ const MyCustomWidget = ({ dataSourceId }: { dataSourceId: string }) => {
 
 
 
+
+
 import { React, AllWidgetProps } from 'jimu-core';
-import { DataSourceComponent, DataSource, DataRecord } from 'jimu-core';
+import { DataSourceComponent, DataSource } from 'jimu-core';
 import { useState, useEffect } from 'react';
 
 const MyCustomWidget = (props: AllWidgetProps<{}>) => {
-  const [selectedRow, setSelectedRow] = useState<DataRecord | null>(null);
-
+  const [selectedData, setSelectedData] = useState(null);
   const dataSourceId = props.useDataSources?.[0]?.dataSourceId;
 
   return (
-    <DataSourceComponent
-      useDataSource={{ dataSourceId }}
-      query={{ returnGeometry: false }}
-      widgetId={props.id}
-    >
+    <DataSourceComponent useDataSource={{ dataSourceId }} widgetId={props.id}>
       {(ds: DataSource) => {
-        if (!ds) return <p>No Data Source</p>;
-
         useEffect(() => {
-          const handleSelectionChange = () => {
-            const selectedRecords = ds.getSelectedRecords();
-            setSelectedRow(selectedRecords.length > 0 ? selectedRecords[0] : null);
+          if (!ds) return;
+
+          const updateSelection = () => {
+            const selected = ds.getSelectedRecords();
+            setSelectedData(selected.length > 0 ? selected[0].getData() : null);
           };
 
-          ds.addSelectionChangeListener(handleSelectionChange);
-
-          return () => ds.removeSelectionChangeListener(handleSelectionChange);
+          ds.addSelectionChangeListener(updateSelection);
+          return () => ds.removeSelectionChangeListener(updateSelection);
         }, [ds]);
 
         return (
           <div>
-            <h3>Selected Row Data:</h3>
-            {selectedRow ? (
-              <pre>{JSON.stringify(selectedRow.getData(), null, 2)}</pre>
-            ) : (
-              <p>No row selected.</p>
-            )}
+            <h3>Selected Row:</h3>
+            <pre>{selectedData ? JSON.stringify(selectedData, null, 2) : 'No row selected'}</pre>
           </div>
         );
       }}
@@ -249,6 +241,7 @@ const MyCustomWidget = (props: AllWidgetProps<{}>) => {
 };
 
 export default MyCustomWidget;
+
 
 
 
