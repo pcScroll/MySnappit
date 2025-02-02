@@ -243,15 +243,22 @@ const MyCustomWidget = (props: AllWidgetProps<{}>) => {
 export default MyCustomWidget;
 
 
+  if (!dataSourceId) {
+    return <div>No DataSource connected.</div>;
+  }
 
-
-  return (
     <DataSourceComponent useDataSource={{ dataSourceId }} widgetId={props.id}>
       {(ds: DataSource) => {
         if (!ds) return null;
 
+        // Get the selected records
         const selectedRecords: DataRecord[] = ds.getSelectedRecords();
-        setSelectedData(selectedRecords.length > 0 ? selectedRecords[0].getData() : null);
+        const selected = selectedRecords.length > 0 ? selectedRecords[0].getData() : null;
+
+        // Update state only if selection changes
+        if (selected !== selectedData) {
+          setSelectedData(selected);
+        }
 
         return (
           <div>
@@ -261,7 +268,6 @@ export default MyCustomWidget;
         );
       }}
     </DataSourceComponent>
-  );
 
 
 
