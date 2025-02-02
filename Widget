@@ -200,3 +200,55 @@ const MyCustomWidget = ({ dataSourceId }: { dataSourceId: string }) => {
   }, [dataSourceId]); // Only run this effect when dataSourceId changes
 
 
+
+
+
+
+import { React, AllWidgetProps } from 'jimu-core';
+import { DataSourceComponent, DataSource, DataRecord } from 'jimu-core';
+import { useState, useEffect } from 'react';
+
+const MyCustomWidget = (props: AllWidgetProps<{}>) => {
+  const [selectedRow, setSelectedRow] = useState<DataRecord | null>(null);
+
+  const dataSourceId = props.useDataSources?.[0]?.dataSourceId;
+
+  return (
+    <DataSourceComponent
+      useDataSource={{ dataSourceId }}
+      query={{ returnGeometry: false }}
+      widgetId={props.id}
+    >
+      {(ds: DataSource) => {
+        if (!ds) return <p>No Data Source</p>;
+
+        useEffect(() => {
+          const handleSelectionChange = () => {
+            const selectedRecords = ds.getSelectedRecords();
+            setSelectedRow(selectedRecords.length > 0 ? selectedRecords[0] : null);
+          };
+
+          ds.addSelectionChangeListener(handleSelectionChange);
+
+          return () => ds.removeSelectionChangeListener(handleSelectionChange);
+        }, [ds]);
+
+        return (
+          <div>
+            <h3>Selected Row Data:</h3>
+            {selectedRow ? (
+              <pre>{JSON.stringify(selectedRow.getData(), null, 2)}</pre>
+            ) : (
+              <p>No row selected.</p>
+            )}
+          </div>
+        );
+      }}
+    </DataSourceComponent>
+  );
+};
+
+export default MyCustomWidget;
+
+
+
