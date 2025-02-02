@@ -357,5 +357,49 @@ export default MyCustomWidget;
   };
 
 
+import { React, AllWidgetProps } from 'jimu-core';
+import { DataRecordsSelectionChangeMessage, MessageManager } from 'jimu-core';
+import { useState, useEffect } from 'react';
+
+const MyCustomWidget = (props: AllWidgetProps<any>) => {
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  useEffect(() => {
+    // Subscribe to table row selection changes
+    const handleMessage = (message: DataRecordsSelectionChangeMessage) => {
+      const records = message.records;
+      if (records && records.length > 0) {
+        setSelectedRow(records[0].getData()); // Store selected row data
+      } else {
+        setSelectedRow(null);
+      }
+    };
+
+    // Register the listener with MessageManager
+    MessageManager.getInstance().subscribe(
+      DataRecordsSelectionChangeMessage,
+      handleMessage
+    );
+
+    // Cleanup function
+    return () => {
+      MessageManager.getInstance().unsubscribe(
+        DataRecordsSelectionChangeMessage,
+        handleMessage
+      );
+    };
+  }, []);
+
+  return (
+    <div>
+      <h3>Selected Row Data:</h3>
+      <pre>{selectedRow ? JSON.stringify(selectedRow, null, 2) : "No row selected"}</pre>
+    </div>
+  );
+};
+
+export default MyCustomWidget;
+
+
 
 
