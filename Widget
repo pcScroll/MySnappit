@@ -245,3 +245,41 @@ export default MyCustomWidget;
 
 
 
+import { React, AllWidgetProps } from 'jimu-core';
+import { DataSourceComponent, DataSource } from 'jimu-core';
+import { useState, useEffect } from 'react';
+
+const MyCustomWidget = (props: AllWidgetProps<{}>) => {
+  const [selectedData, setSelectedData] = useState(null);
+  const dataSourceId = props.useDataSources?.[0]?.dataSourceId;
+
+  // Effect to listen for selection changes
+  useEffect(() => {
+    if (!dataSourceId) return;
+
+    const ds = props.dataSources?.[dataSourceId] as DataSource;
+    if (!ds) return;
+
+    const updateSelection = () => {
+      const selected = ds.getSelectedRecords();
+      setSelectedData(selected.length > 0 ? selected[0].getData() : null);
+    };
+
+    ds.addSelectionChangeListener(updateSelection);
+    return () => ds.removeSelectionChangeListener(updateSelection);
+  }, [props.dataSources, dataSourceId]);
+
+  return (
+    <div>
+      <h3>Selected Row:</h3>
+      <pre>{selectedData ? JSON.stringify(selectedData, null, 2) : 'No row selected'}</pre>
+    </div>
+  );
+};
+
+export default MyCustomWidget;
+
+
+
+
+
