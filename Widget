@@ -344,6 +344,21 @@ const MyCustomWidget = (props: AllWidgetProps<{}>) => {
 export default MyCustomWidget;
 
 
+DataRecordsSelectionChangeMessage
+    props.widgetContext?.registerWidgetAction(
+      "onTableRowSelected",
+      (message: DataRecordsSelectionChangeMessage) => {
+        const records = message.records;
+        if (records && records.length > 0) {
+          setSelectedRow(records[0].getData()); // Store selected row data
+        } else {
+          setSelectedRow(null);
+        }
+      }
+    );
+  }, []);
+
+
 
 
 
