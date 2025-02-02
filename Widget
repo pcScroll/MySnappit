@@ -357,49 +357,26 @@ export default MyCustomWidget;
   };
 
 
-import { React, AllWidgetProps } from 'jimu-core';
-import { DataRecordsSelectionChangeMessage, MessageManager } from 'jimu-core';
-import { useState, useEffect } from 'react';
-
-const MyCustomWidget = (props: AllWidgetProps<any>) => {
-  const [selectedRow, setSelectedRow] = useState(null);
-
+  // Use the `onAction` to handle the message from Table Widget
   useEffect(() => {
-    // Subscribe to table row selection changes
-    const handleMessage = (message: DataRecordsSelectionChangeMessage) => {
-      const records = message.records;
-      if (records && records.length > 0) {
-        setSelectedRow(records[0].getData()); // Store selected row data
-      } else {
-        setSelectedRow(null);
+    const listener = (message) => {
+      if (message && message.type === 'DataRecordsSelectionChangeMessage') {
+        const records = message.records;
+        if (records && records.length > 0) {
+          setSelectedRow(records[0].getData()); // Store the selected row data
+        } else {
+          setSelectedRow(null); // Reset if no row is selected
+        }
       }
     };
 
-    // Register the listener with MessageManager
-    MessageManager.getInstance().subscribe(
-      DataRecordsSelectionChangeMessage,
-      handleMessage
-    );
+    // Register the listener for this widget to handle the message
+    props.onAction(listener);
 
-    // Cleanup function
+    // Clean up when the component unmounts
     return () => {
-      MessageManager.getInstance().unsubscribe(
-        DataRecordsSelectionChangeMessage,
-        handleMessage
-      );
+      props.removeActionListener(listener);
     };
   }, []);
-
-  return (
-    <div>
-      <h3>Selected Row Data:</h3>
-      <pre>{selectedRow ? JSON.stringify(selectedRow, null, 2) : "No row selected"}</pre>
-    </div>
-  );
-};
-
-export default MyCustomWidget;
-
-
 
 
