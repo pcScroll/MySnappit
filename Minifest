@@ -1,87 +1,32 @@
-
-
-import * as React from "react";
-import { useState, useEffect } from "react";
-import { JimuMapViewComponent, JimuMapView } from "jimu-arcgis";
-
-interface WidgetProps {
-  useMapWidgetId: string; // Pass the map widget ID as a prop
-}
-
-const Widget: React.FC<WidgetProps> = (props) => {
-  const [selectedFeatures, setSelectedFeatures] = useState<any[]>([]);
-  const [jimuMapView, setJimuMapView] = useState<JimuMapView | null>(null);
-
-  // Hardcode the layer IDs and website URL
-  const layerIds = ["layer_12345", "layer_67890"]; // Replace with actual Layer IDs
-  const websiteURL = "https://your-website.com"; // Replace with your website URL
-
-  // Handle map click event
-  useEffect(() => {
-    if (!jimuMapView) {
-      console.error("JimuMapView is not available!");
-      return;
-    }
-
-    const view = jimuMapView.view;
-
-    // Function to handle map click
-    const handleMapClick = async (event: any) => {
-      console.log("Map click detected at:", event.mapPoint); // Debugging
-
-      // Perform a hitTest on the map view
-      const hitTestResponse = await view.hitTest(event);
-      const features = hitTestResponse.results
-        .filter((result) => layerIds.includes(result.graphic.layer.id)) // Filter by layer IDs
-        .map((result) => result.graphic); // Extract features
-
-      console.log("Selected features:", features); // Debugging
-      setSelectedFeatures(features);
-    };
-
-    // Listen for click events on the map view
-    view.on("click", handleMapClick);
-
-    // Cleanup event listener on unmount
-    return () => {
-      view.off("click", handleMapClick);
-    };
-  }, [jimuMapView]);
-
-  // Open website with selected features
-  const openWebsite = () => {
-    const featuresJSON = JSON.stringify(selectedFeatures, (key, value) => {
-      if (value && typeof value === "object" && "geometry" in value) {
-        return {
-          attributes: value.attributes,
-          geometry: value.geometry.toJSON(), // Simplify geometry
-        };
+{
+  "widgetType": "CustomWidget",
+  "label": "My Custom Widget",
+  "description": "A custom widget for Experience Builder",
+  "version": "1.0.0",
+  "icon": "widgets/custom-widget/assets/widget-icon.svg",
+  "category": "custom",
+  "supportDataSource": true,
+  "useDataSource": true,
+  "dataSourceUsageMode": "multiple",
+  "config": {
+    "dataSourceId": "",
+    "someOtherConfig": ""
+  },
+  "properties": {
+    "property1": "value1",
+    "property2": "value2"
+  },
+  "dependencies": {
+    "jimu-core": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "widgets": {
+    "Main": {
+      "widgetType": "Main",
+      "config": {
+        "someConfig": "value"
       }
-      return value;
-    });
-
-    const encodedFeatures = encodeURIComponent(featuresJSON);
-    const urlWithFeatures = `${websiteURL}?features=${encodedFeatures}`;
-
-    // Open the website in a new tab
-    window.open(urlWithFeatures, "_blank");
-  };
-
-  return (
-    <div>
-      {/* Use JimuMapViewComponent to get the active map view */}
-      <JimuMapViewComponent
-        useMapWidgetId={props.useMapWidgetId} // Pass the map widget ID as a prop
-        onActiveViewChange={(view) => {
-          console.log("JimuMapView initialized:", view); // Debugging
-          setJimuMapView(view);
-        }}
-      />
-      <button onClick={openWebsite} disabled={selectedFeatures.length === 0}>
-        Open Website with {selectedFeatures.length} Selected Features
-      </button>
-    </div>
-  );
-};
-
-export default Widget;
+    }
+  }
+}
