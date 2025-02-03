@@ -512,6 +512,16 @@ function debounce(func, wait) {
   };
 }
 
+// Debounce function to limit how often the handler is called
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
 export default Widget;
 
 
