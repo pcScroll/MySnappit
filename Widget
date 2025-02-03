@@ -380,3 +380,26 @@ export default MyCustomWidget;
   }, []);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  const intervalId = setInterval(checkUrlChange, 500);
+
