@@ -401,5 +401,32 @@ export default MyCustomWidget;
 
 
 
-  const intervalId = setInterval(checkUrlChange, 500);
+const handleUrlChange = () => {
+      console.log("URL changed to:", window.location.href);
+      // Add your custom logic here to handle URL changes
+    };
+
+    // Listen for `popstate` events (back/forward buttons)
+    window.addEventListener("popstate", handleUrlChange);
+
+    // Override `pushState` and `replaceState` to detect manual URL changes
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function (...args) {
+      originalPushState.apply(window.history, args);
+      handleUrlChange(); // Trigger URL change handler
+    };
+
+    window.history.replaceState = function (...args) {
+      originalReplaceState.apply(window.history, args);
+      handleUrlChange(); // Trigger URL change handler
+    };
+
+    // Cleanup event listeners and overrides on component unmount
+    return () => {
+      window.removeEventListener("popstate", handleUrlChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
 
