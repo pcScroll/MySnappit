@@ -440,47 +440,77 @@ const handleUrlChange = () => {
 
 
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { AllWidgetProps } from "jimu-core";
 
 const Widget: React.FC<AllWidgetProps<any>> = (props) => {
-  const lastUrl = useRef(window.location.href);
+  // ✅ Define the function before using it
+  const handleIframeLoad = () => {
+    console.log("✅ iFrame has loaded successfully!");
+  };
 
+  // ✅ Handle URL changes
   useEffect(() => {
-    console.log("useEffect ran");
+    let isMounted = true; // Track if the component is still mounted
 
-const handleUrlChange = () => {
-      if (window.location.href !== lastUrl.current) {
-        lastUrl.current = window.location.href;
-        console.log("URL changed to:", window.location.href);
-      }
+    const handleUrlChange = () => {
+      if (!isMounted) return; // Exit if the component is unmounted
+      console.log("URL changed to:", window.location.href);
+      // Add your custom logic here to handle URL changes
     };
 
-    window.addEventListener("popstate", handleUrlChange);
+    // Debounce the handler to ensure it's only called once
+    const debouncedHandleUrlChange = debounce(handleUrlChange, 100);
 
+    // Listen for `popstate` events (back/forward buttons)
+    window.addEventListener("popstate", debouncedHandleUrlChange);
+
+    // Override `pushState` and `replaceState` to detect manual URL changes
     const originalPushState = window.history.pushState;
     const originalReplaceState = window.history.replaceState;
 
-    const customHistoryChange = (method: typeof originalPushState) => {
-      return function (this: History, ...args: any[]) {
-        method.apply(this, args);
-        handleUrlChange();
-      };
+    window.history.pushState = function (...args) {
+      originalPushState.apply(window.history, args);
+      debouncedHandleUrlChange(); // Trigger debounced URL change handler
     };
 
-    window.history.pushState = customHistoryChange(originalPushState);
-    window.history.replaceState = customHistoryChange(originalReplaceState);
+    window.history.replaceState = function (...args) {
+      originalReplaceState.apply(window.history, args);
+      debouncedHandleUrlChange(); // Trigger debounced URL change handler
+    };
 
+    // Cleanup event listeners and overrides on component unmount
     return () => {
-      console.log("useEffect cleanup");
-      window.removeEventListener("popstate", handleUrlChange);
+      isMounted = false; // Mark the component as unmounted
+      window.removeEventListener("popstate", debouncedHandleUrlChange);
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
-  return null;
+  return (
+    <div>
+      <h3>Embedded iFrame</h3>
+      <iframe
+        id="myIframe"
+        src="https://www.example.com"
+        width="600"
+        height="400"
+        onLoad={handleIframeLoad} // ✅ Now it's correctly defined
+        style={{ border: "1px solid black" }}
+      ></iframe>
+    </div>
+  );
 };
+
+// Debounce function to limit how often the handler is called
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
 
 export default Widget;
 
