@@ -430,3 +430,58 @@ const handleUrlChange = () => {
       window.history.replaceState = originalReplaceState;
     };
 
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useRef } from "react";
+import { AllWidgetProps } from "jimu-core";
+
+const Widget: React.FC<AllWidgetProps<any>> = (props) => {
+  const lastUrl = useRef(window.location.href);
+
+  useEffect(() => {
+    console.log("useEffect ran");
+
+    const handleUrlChange = () => {
+      if (window.location.href !== lastUrl.current) {
+        lastUrl.current = window.location.href;
+        console.log("URL changed to:", window.location.href);
+      }
+    };
+
+    window.addEventListener("popstate", handleUrlChange);
+
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function (...args) {
+      originalPushState.apply(window.history, args);
+      handleUrlChange();
+    };
+
+    window.history.replaceState = function (...args) {
+      originalReplaceState.apply(window.history, args);
+      handleUrlChange();
+    };
+
+    return () => {
+      console.log("useEffect cleanup");
+      window.removeEventListener("popstate", handleUrlChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
+
+  return null;
+};
+
+export default Widget;
+
+
