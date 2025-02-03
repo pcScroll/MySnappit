@@ -449,7 +449,7 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
   useEffect(() => {
     console.log("useEffect ran");
 
-    const handleUrlChange = () => {
+const handleUrlChange = () => {
       if (window.location.href !== lastUrl.current) {
         lastUrl.current = window.location.href;
         console.log("URL changed to:", window.location.href);
@@ -461,15 +461,15 @@ const Widget: React.FC<AllWidgetProps<any>> = (props) => {
     const originalPushState = window.history.pushState;
     const originalReplaceState = window.history.replaceState;
 
-    window.history.pushState = function (...args) {
-      originalPushState.apply(window.history, args);
-      handleUrlChange();
+    const customHistoryChange = (method: typeof originalPushState) => {
+      return function (this: History, ...args: any[]) {
+        method.apply(this, args);
+        handleUrlChange();
+      };
     };
 
-    window.history.replaceState = function (...args) {
-      originalReplaceState.apply(window.history, args);
-      handleUrlChange();
-    };
+    window.history.pushState = customHistoryChange(originalPushState);
+    window.history.replaceState = customHistoryChange(originalReplaceState);
 
     return () => {
       console.log("useEffect cleanup");
