@@ -1,1 +1,156 @@
 
+import React, { } from 'react'
+import { type AllWidgetProps, getAppStore, type IMAppConfig } from 'jimu-core'
+import { MapViewManager } from 'jimu-arcgis'
+import { Button } from 'jimu-ui'
+import { FiPrinter } from 'react-icons/fi'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+
+const widget = (props: AllWidgetProps<any>) => {
+  const captureAndDownloadPDF = () => {
+    let lstmapViews: any
+    let mapWidgetDiv: any
+    const appconfig: IMAppConfig = getAppStore().getState().appConfig
+    if (!appconfig) {
+      printbody()
+    } else {
+      // console.log('AppConfig:', appconfig)
+      // const mapWidgetID = Object.keys(appconfig.widgets).find((id) => {
+      //   const widget = appconfig.widgets[id]
+      //   return widget.manifest.name === 'arcgis-map'
+      // })
+      // if (mapWidgetID) {
+      const mapviewManager = MapViewManager.getInstance()
+      lstmapViews = mapviewManager.getAllJimuMapViews()
+      if (lstmapViews.length > 0) {
+        lstmapViews[0].view.takeScreenshot().then((screenshot: any) => {
+          const MapimageUrl = screenshot.dataUrl
+          replaceMapwithImg(MapimageUrl, '.arcgis-map')
+          printbody()
+        })
+        // lstmapViews.forEach(mapView => {
+        //   mapView.view.takeScreenshot().then((screenshot: any) => {
+        //     const MapimageUrl = screenshot.dataUrl
+        //     replaceMapwithImg(MapimageUrl, '.arcgis-map')
+        //     printbody()
+        //   })
+        // })
+      } else {
+        printbody()
+      }
+      // } else {
+      //   printbody()
+      // }
+    }
+
+    function replaceMapwithImg (mapImage: string, widgetId: string): void {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+      mapWidgetDiv = document.querySelector(widgetId) as HTMLElement
+      if (!mapWidgetDiv) {
+        console.error(`No Element found with widgetId ${widgetId}`)
+        return
+      }
+      const imgElement = document.createElement('img')
+      imgElement.src = mapImage
+      imgElement.id = 'TempMapImag'
+      imgElement.style.width = `${mapWidgetDiv.offsetWidth}px`
+      imgElement.style.height = `${mapWidgetDiv.offsetHeight}px`
+
+      const parent = mapWidgetDiv.parentNode as HTMLElement
+      parent.replaceChild(imgElement, mapWidgetDiv)
+    }
+
+    function printbody (): void {
+      const body = document.getElementsByTagName('body')[0]
+      const scrollX = window.scrollX || 0
+      const scrollY = window.scrollY || 0
+      const now = new Date()
+      const dateString = now.toISOString().replace(/[-T:\.Z]/g, '')
+      html2canvas(body, {
+        useCORS: true,
+        scrollX,
+        scrollY,
+        width: document.documentElement.scrollWidth - 10,
+        height: document.documentElement.scrollHeight - 10,
+        x: 5,
+        y: 5,
+        scale: 3,
+        logging: true,
+        backgroundColor: 'transparent'
+
+      }).then((canvas) => {
+        const croppedCanvas = document.createElement('canvas')
+        const croppedCtx = croppedCanvas.getContext('2d')
+        const croppedWidth = canvas.width
+        const croppedHeight = canvas.height
+        croppedCanvas.width = croppedWidth
+        croppedCanvas.height = croppedHeight
+        croppedCtx.drawImage(canvas, 0, 0, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight)
+
+        const imgData = croppedCanvas.toDataURL('image/jpeg', 0.5)
+        const imgWidth = 297
+        const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+        let orientation = 'l'
+
+        if (imgHeight > 210) {
+          orientation = 'p'
+        }
+
+        // eslint-disable-next-line new-cap
+        const doc = new jsPDF({
+          orientation: orientation,
+          unit: 'mm',
+          format: 'a4',
+          compress: true
+        })
+
+        let scaledWidth, scaledHeight
+
+        if (orientation === 'p') {
+          const scaleFactor = (imgWidth - 10) / imgHeight
+          scaledWidth = imgWidth * scaleFactor
+          scaledHeight = imgHeight * scaleFactor
+
+          if (scaledWidth > 200) {
+            const scaleWidthFactor = 200 / scaledWidth
+            scaledWidth = 200
+            scaledHeight = scaledHeight * scaleWidthFactor
+          }
+        } else {
+          const scaleFactor = (imgWidth - 10) / imgHeight
+          scaledWidth = imgWidth * scaleFactor
+          scaledHeight = imgHeight * scaleFactor + 25
+
+          if (scaledWidth > 287) {
+            const scaleWidthFactor = (287) / scaledWidth
+            scaledWidth = 287
+            scaledHeight = scaledHeight * scaleWidthFactor + 25
+          }
+        }
+        // Add image with 5px margin offset
+        doc.addImage(imgData, 'JPEG', 5, 5, scaledWidth, scaledHeight)
+
+        const filename = `map_${dateString}.pdf`
+
+        const ImgElement = document.getElementById('TempMapImag') as HTMLImageElement
+        if (ImgElement) {
+          const parent = ImgElement.parentNode as HTMLElement
+          parent.replaceChild(mapWidgetDiv, ImgElement)
+        }
+        doc.save(filename)
+      }).catch((error) => {
+        console.error('Error capturing image:', error)
+      })
+    }
+  }
+
+  return (
+    <div className="widget-demo jimu-widget m-2">
+      <Button onClick={captureAndDownloadPDF}> <FiPrinter size={32} /></Button>
+    </div>
+  )
+}
+
+export default widget
