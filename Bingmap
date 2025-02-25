@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArcGIS JS API with Bing Maps</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.29/"></script>
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/BingMapsLayer"
+        ], function (Map, MapView, BingMapsLayer) {
+
+            // Replace with your Bing Maps Key
+            const bingMapsKey = "YOUR_BING_MAPS_KEY";
+
+            // Create Bing Maps Layer (satellite imagery)
+            const bingLayer = new BingMapsLayer({
+                key: bingMapsKey,
+                style: "a"  // 'a' for Aerial (satellite), 'r' for Roads, 'h' for Hybrid
+            });
+
+            // Create the map
+            const map = new Map({
+                basemap: {
+                    baseLayers: [bingLayer] // Set Bing as the basemap
+                }
+            });
+
+            // Create the view
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-74.006, 40.7128], // New York City coordinates
+                zoom: 12
+            });
+
+        });
+    </script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+</body>
+</html>
